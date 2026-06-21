@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { saveContactMessage } from '@/lib/store';
+import { saveContactMessageDb } from '@/lib/store';
 import { toast } from '@/components/Toast';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 
@@ -11,14 +11,18 @@ export default function ContactPage() {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    saveContactMessage({ name, email, subject, message, date: new Date().toISOString() });
-    toast('Message sent! We\'ll get back to you soon.');
-    setName('');
-    setEmail('');
-    setSubject('');
-    setMessage('');
+    try {
+      await saveContactMessageDb({ name, email, subject, message });
+      toast('Message sent! We\'ll get back to you soon.');
+      setName('');
+      setEmail('');
+      setSubject('');
+      setMessage('');
+    } catch {
+      toast('Failed to send. Please try again.');
+    }
   };
 
   return (

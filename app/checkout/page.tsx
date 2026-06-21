@@ -2,7 +2,7 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadCart, saveCart, placeOrder, CartItem } from '@/lib/store';
+import { loadCart, saveCart, placeOrderDb, CartItem } from '@/lib/store';
 import { PRODUCTS } from '@/lib/data';
 import { toast } from '@/components/Toast';
 
@@ -73,16 +73,21 @@ export default function CheckoutPage() {
         name: 'Bahja Pure Honey',
         description: 'Honey Purchase',
         order_id: order.id,
-        handler: function (response: any) {
-          const orderData = placeOrder({
-            name, phone, email, address, city, pincode,
-            payment: 'razorpay',
-            cart, total,
-            razorpayPaymentId: response.razorpay_payment_id,
-          });
-          saveCart([]);
-          window.dispatchEvent(new Event('cart-update'));
-          router.push(`/order-confirmed?id=${orderData.id}`);
+        handler: async function (response: any) {
+          try {
+            const orderData = await placeOrderDb({
+              name, phone, email, address, city, pincode,
+              payment: 'razorpay',
+              cart, total,
+              razorpayPaymentId: response.razorpay_payment_id,
+            });
+            saveCart([]);
+            window.dispatchEvent(new Event('cart-update'));
+            router.push(`/order-confirmed?id=${orderData.id}`);
+          } catch {
+            toast('Failed to save order. Please contact us.');
+            setProcessing(false);
+          }
         },
         prefill: { name, email, contact: phone },
         theme: { color: '#eab704' },
@@ -103,19 +108,23 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) {
       toast('Your cart is empty!');
       return;
     }
     if (payment === 'razorpay') {
-      handleRazorpayPayment();
+      await handleRazorpayPayment();
     } else {
-      const order = placeOrder({ name, phone, email, address, city, pincode, payment: 'cod', cart, total });
-      saveCart([]);
-      window.dispatchEvent(new Event('cart-update'));
-      router.push(`/order-confirmed?id=${order.id}`);
+      try {
+        const order = await placeOrderDb({ name, phone, email, address, city, pincode, payment: 'cod', cart, total });
+        saveCart([]);
+        window.dispatchEvent(new Event('cart-update'));
+        router.push(`/order-confirmed?id=${order.id}`);
+      } catch {
+        toast('Failed to place order. Please try again.');
+      }
     }
   };
 

@@ -2,11 +2,11 @@
 
 import { Suspense, useState, useEffect, FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getOrderById, getAllOrders } from '@/lib/store';
+import { getOrderById, getOrderByIdDb, getAllOrdersDb, OrderInfo } from '@/lib/store';
 
 const timeline = ['Order Placed', 'Confirmed', 'Preparing', 'Dispatched', 'Out for Delivery', 'Delivered'];
 
-function OrderDetail({ order }: { order: ReturnType<typeof getOrderById> }) {
+function OrderDetail({ order }: { order: OrderInfo | undefined }) {
   if (!order) return null;
   const currentStep = timeline.indexOf(order.status);
   return (
@@ -54,23 +54,36 @@ function TrackContent() {
   const searchParams = useSearchParams();
   const initialId = searchParams.get('id') || '';
   const [inputId, setInputId] = useState(initialId);
-  const [order, setOrder] = useState(initialId ? getOrderById(initialId) : undefined);
+  const [order, setOrder] = useState<OrderInfo | undefined>(undefined);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [allOrders, setAllOrders] = useState<OrderInfo[]>([]);
+
+  useEffect(() => {
+    getAllOrdersDb().then(setAllOrders);
+  }, []);
 
   useEffect(() => {
     if (initialId) {
       setInputId(initialId);
-      setOrder(getOrderById(initialId));
+      const local = getOrderById(initialId);
+      if (local) {
+        setOrder(local);
+      } else {
+        getOrderByIdDb(initialId).then((o) => setOrder(o));
+      }
     }
   }, [initialId]);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const found = getOrderById(inputId);
-    setOrder(found);
+    const local = getOrderById(inputId);
+    if (local) {
+      setOrder(local);
+    } else {
+      const found = await getOrderByIdDb(inputId);
+      setOrder(found);
+    }
   };
-
-  const allOrders = getAllOrders();
 
   return (
     <>

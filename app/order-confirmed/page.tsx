@@ -1,15 +1,27 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { getOrderById } from '@/lib/store';
+import { getOrderById, getOrderByIdDb, OrderInfo } from '@/lib/store';
 
 function OrderContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
-  const order = id ? getOrderById(id) : undefined;
+  const [order, setOrder] = useState<OrderInfo | undefined>(undefined);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    const local = getOrderById(id);
+    if (local) {
+      setOrder(local);
+    } else {
+      getOrderByIdDb(id).then((o) => {
+        if (o) setOrder(o);
+      });
+    }
+  }, [id]);
 
   const copyId = () => {
     if (order) {

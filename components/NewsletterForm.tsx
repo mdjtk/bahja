@@ -1,20 +1,22 @@
 'use client';
 
-import { FormEvent, useRef } from 'react';
-import { saveSubscriber } from '@/lib/store';
+import { FormEvent } from 'react';
+import { saveSubscriberDb } from '@/lib/store';
 import { toast } from './Toast';
 
 export default function NewsletterForm() {
-  const ref = useRef<HTMLFormElement>(null);
-
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const input = form.querySelector('input[type="email"]') as HTMLInputElement;
     if (!input?.value) return;
-    saveSubscriber(input.value);
-    form.reset();
-    toast('Welcome to the Bahja family!');
+    try {
+      await saveSubscriberDb(input.value);
+      form.reset();
+      toast('Welcome to the Bahja family!');
+    } catch {
+      toast('Something went wrong. Please try again.');
+    }
   };
 
   return (
