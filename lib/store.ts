@@ -28,6 +28,7 @@ export interface OrderInfo {
   total?: number;
   date: string;
   status?: string;
+  razorpayPaymentId?: string;
 }
 
 const CART_KEY = 'bahja_cart';
@@ -96,7 +97,7 @@ export function updateQty(
   );
 }
 
-export function placeOrder(data: Omit<OrderInfo, 'id' | 'date' | 'items'> & { cart: CartItem[] }): OrderInfo {
+export function placeOrder(data: Omit<OrderInfo, 'id' | 'date' | 'items'> & { cart: CartItem[] } & { razorpayPaymentId?: string }): OrderInfo {
   const items: OrderItem[] = data.cart.map((item) => {
     const product = PRODUCTS[item.id];
     const variant = product?.variants[item.variant];
@@ -122,6 +123,7 @@ export function placeOrder(data: Omit<OrderInfo, 'id' | 'date' | 'items'> & { ca
     total: data.total,
     date: new Date().toISOString(),
     status: 'Confirmed',
+    razorpayPaymentId: data.razorpayPaymentId,
   };
   localStorage.setItem(ORDER_ID_KEY, order.id);
   localStorage.setItem(ORDER_KEY, JSON.stringify(order));

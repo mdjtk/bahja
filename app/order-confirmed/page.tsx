@@ -49,7 +49,7 @@ function OrderContent() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Payment Method</span>
-                <span style={{ color: '#3A241A', fontWeight: 500 }}>Cash on Delivery</span>
+                <span style={{ color: '#3A241A', fontWeight: 500 }}>{order.payment === 'razorpay' ? 'Paid Online (Razorpay)' : 'Cash on Delivery'}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Delivery Estimate</span>

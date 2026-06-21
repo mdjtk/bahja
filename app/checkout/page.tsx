@@ -6,6 +6,21 @@ import { loadCart, saveCart, placeOrder, CartItem } from '@/lib/store';
 import { PRODUCTS } from '@/lib/data';
 import { toast } from '@/components/Toast';
 
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -17,10 +32,10 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('');
   const [pincode, setPincode] = useState('');
   const [payment, setPayment] = useState('cod');
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     const c = loadCart();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCart(c);
     setLoaded(true);
   }, []);
@@ -33,16 +48,75 @@ export default function CheckoutPage() {
   const shipping = subtotal >= 400 ? 0 : 49;
   const total = subtotal + shipping;
 
+  const handleRazorpayPayment = async () => {
+    setProcessing(true);
+    try {
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: total, receipt: 'bhj_' + Date.now() }),
+      });
+      if (!res.ok) throw new Error('Failed to create order');
+      const order = await res.json();
+
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        toast('Failed to load payment gateway');
+        setProcessing(false);
+        return;
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'Bahja Pure Honey',
+        description: 'Honey Purchase',
+        order_id: order.id,
+        handler: function (response: any) {
+          const orderData = placeOrder({
+            name, phone, email, address, city, pincode,
+            payment: 'razorpay',
+            cart, total,
+            razorpayPaymentId: response.razorpay_payment_id,
+          });
+          saveCart([]);
+          window.dispatchEvent(new Event('cart-update'));
+          router.push(`/order-confirmed?id=${orderData.id}`);
+        },
+        prefill: { name, email, contact: phone },
+        theme: { color: '#eab704' },
+        modal: {
+          ondismiss: () => setProcessing(false),
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function () {
+        toast('Payment failed. Please try again.');
+        setProcessing(false);
+      });
+      rzp.open();
+    } catch {
+      toast('Something went wrong. Please try again.');
+      setProcessing(false);
+    }
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) {
       toast('Your cart is empty!');
       return;
     }
-    const order = placeOrder({ name, phone, email, address, city, pincode, payment, cart, total });
-    saveCart([]);
-    window.dispatchEvent(new Event('cart-update'));
-    router.push(`/order-confirmed?id=${order.id}`);
+    if (payment === 'razorpay') {
+      handleRazorpayPayment();
+    } else {
+      const order = placeOrder({ name, phone, email, address, city, pincode, payment: 'cod', cart, total });
+      saveCart([]);
+      window.dispatchEvent(new Event('cart-update'));
+      router.push(`/order-confirmed?id=${order.id}`);
+    }
   };
 
   if (!loaded) return null;
@@ -108,14 +182,16 @@ export default function CheckoutPage() {
                       <input type="radio" name="payment" value="cod" checked={payment === 'cod'} onChange={(e) => setPayment(e.target.value)} />
                       Cash on Delivery
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', border: '1px solid rgba(58,36,26,0.1)', borderRadius: 8, cursor: 'pointer', opacity: 0.5 }}>
-                      <input type="radio" disabled />
-                      Pay Online <span style={{ fontSize: 11, color: 'rgba(58,36,26,0.3)' }}>(Coming Soon)</span>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', border: payment === 'razorpay' ? '2px solid #eab704' : '1px solid rgba(58,36,26,0.1)', borderRadius: 8, cursor: 'pointer', background: payment === 'razorpay' ? '#fdf6ec' : '#fff' }}>
+                      <input type="radio" name="payment" value="razorpay" checked={payment === 'razorpay'} onChange={(e) => setPayment(e.target.value)} />
+                      Pay Online <span style={{ fontSize: 11, color: 'rgba(58,36,26,0.3)' }}>(UPI • Card • Netbanking)</span>
                     </label>
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary">Place Order →</button>
+                <button type="submit" className="btn btn-primary" disabled={processing}>
+                  {processing ? 'Processing…' : (payment === 'razorpay' ? 'Pay ₹' + total + ' →' : 'Place Order →')}
+                </button>
               </form>
             </div>
             <div>
