@@ -20,6 +20,10 @@ export const metadata: Metadata = {
   description:
     "Bahja brings you pure, raw honey direct from Kerala beehives. Shop Premium Wild Honey & Medicinal Stingless Bee Honey. 100% pure, no additives.",
   keywords: "bahja, honey, pure honey, raw honey, natural honey, Kerala honey",
+  icons: {
+    icon: "/assets/images/logo.png",
+    apple: "/assets/images/logo.png",
+  },
   openGraph: {
     title: "Bahja – Pure, Raw Honey from Kerala",
     description:
