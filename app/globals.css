@@ -99,6 +99,9 @@ nav .container{display:flex;align-items:center;justify-content:space-between;hei
 .product-card .p-body .v-row .v-btn{padding:5px 12px;border:1px solid rgba(234,183,4,.15);background:#fff;border-radius:6px;font-size:11px;font-weight:600;color:#3A241A;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
 .product-card .p-body .v-row .v-btn:hover{border-color:#eab704;background:#fdf6ec}
 .product-card .p-body .v-row .v-btn.active{background:#eab704;color:#fff;border-color:#eab704}
+.product-card .p-body .btn-buy-now{display:block;width:100%;padding:10px 0;margin-bottom:8px;background:linear-gradient(135deg,#3A241A,#5a3c2e);color:#f9eec0;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.5px;transition:all .2s}
+.product-card .p-body .btn-buy-now:hover{background:#2D1C14;transform:translateY(-1px);box-shadow:0 4px 12px rgba(58,36,26,.18)}
+.product-card .p-body .btn-buy-now:active{transform:translateY(0)}
 .product-card .p-body .footer-row{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(58,36,26,.04)}
 .product-card .p-body .footer-row .price{display:flex;align-items:baseline;gap:6px}
 .product-card .p-body .footer-row .price .cur{font-size:20px;font-weight:800;color:#3A241A;font-family:'Inter',sans-serif}

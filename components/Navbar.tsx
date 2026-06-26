@@ -1,38 +1,48 @@
-'use client';
+'use client'
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState, useEffect, useCallback } from 'react';
-import { CartItem } from '@/lib/store';
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { CartItem } from '@/lib/store'
+import { useAuth } from './AuthProvider'
+import { toast } from './Toast'
 
 export default function Navbar({ cart }: { cart: CartItem[] }) {
-  const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname()
+  const router = useRouter()
+  const { user, signOut } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
 
-  const isActive = (path: string) => pathname === path || (path !== '/' && pathname.startsWith(path));
+  const isActive = (path: string) => pathname === path || (path !== '/' && pathname.startsWith(path))
 
-  const close = useCallback(() => setMenuOpen(false), []);
+  const close = useCallback(() => setMenuOpen(false), [])
 
   useEffect(() => {
     const handleScroll = () => {
-      document.querySelector('nav')?.classList.toggle('scrolled', window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+      document.querySelector('nav')?.classList.toggle('scrolled', window.scrollY > 10)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
-    if (!menuOpen) return;
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
-    document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
-  }, [menuOpen, close]);
+    if (!menuOpen) return
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [menuOpen, close])
 
   useEffect(() => {
-    close();
-  }, [pathname, close]);
+    close()
+  }, [pathname, close])
 
-  const count = cart.reduce((sum, item) => sum + item.qty, 0);
+  const count = cart.reduce((sum, item) => sum + item.qty, 0)
+
+  const handleLogout = async () => {
+    await signOut()
+    toast('Logged out')
+    router.push('/')
+  }
 
   return (
     <>
@@ -67,6 +77,14 @@ export default function Navbar({ cart }: { cart: CartItem[] }) {
             </ul>
           </div>
           <div className="nav-right">
+            {user ? (
+              <>
+                <Link href="/account" className="nav-btn">My Account</Link>
+                <button onClick={handleLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'rgba(58,36,26,0.5)', padding: '4px 8px' }}>Logout</button>
+              </>
+            ) : (
+              <Link href="/auth/login?redirect=/account" className="nav-btn">Login</Link>
+            )}
             <Link href="/track" className="nav-btn">Track</Link>
             <Link href="/shop" className="nav-btn nav-btn-primary">Shop Now</Link>
             <Link href="/cart" className="cart-wrap" aria-label="Cart">
@@ -84,5 +102,5 @@ export default function Navbar({ cart }: { cart: CartItem[] }) {
       </nav>
       {menuOpen && <div className="nav-overlay" onClick={close} />}
     </>
-  );
+  )
 }

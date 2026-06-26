@@ -1,69 +1,88 @@
-'use client';
+'use client'
 
-import { useState, useEffect, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { loadCart, saveCart, placeOrderDb, CartItem } from '@/lib/store';
-import { PRODUCTS } from '@/lib/data';
-import { toast } from '@/components/Toast';
+import { useState, useEffect, FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
+import { loadCart, saveCart, placeOrderDb, CartItem } from '@/lib/store'
+import { useAuth } from '@/components/AuthProvider'
+import { toast } from '@/components/Toast'
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
     if ((window as any).Razorpay) {
-      resolve(true);
-      return;
+      resolve(true)
+      return
     }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async = true
+    script.onload = () => resolve(true)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [pincode, setPincode] = useState('');
-  const [payment, setPayment] = useState('cod');
-  const [processing, setProcessing] = useState(false);
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('')
+  const [pincode, setPincode] = useState('')
+  const [payment, setPayment] = useState('cod')
+  const [processing, setProcessing] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [products, setProducts] = useState<any[]>([])
 
   useEffect(() => {
-    const c = loadCart();
-    setCart(c);
-    setLoaded(true);
-  }, []);
+    if (authLoading) return
+    if (!user) {
+      router.push('/auth/login?redirect=/checkout')
+      return
+    }
+    const c = loadCart()
+    setCart(c)
+    setLoaded(true)
+
+    if (user.user_metadata?.full_name) setName(user.user_metadata.full_name)
+    else if (user.user_metadata?.name) setName(user.user_metadata.name)
+    if (user.phone) setPhone(user.phone)
+    if (user.email && !email) setEmail(user.email)
+
+    fetch('/api/products')
+      .then((r) => r.json())
+      .then(setProducts)
+      .catch(() => {})
+  }, [user, authLoading, router])
 
   const subtotal = cart.reduce((sum, item) => {
-    const product = Object.values(PRODUCTS).find((p) => p.id === item.id);
-    const price = product?.variants[item.variant]?.price ?? 0;
-    return sum + price * item.qty;
-  }, 0);
-  const shipping = subtotal >= 400 ? 0 : 49;
-  const total = subtotal + shipping;
+    const product = products.find((p: any) => p.id === item.id)
+    const price = product?.variants[item.variant]?.price ?? 0
+    return sum + price * item.qty
+  }, 0)
+  const shipping = subtotal >= 400 ? 0 : 49
+  const total = subtotal + shipping
 
   const handleRazorpayPayment = async () => {
-    setProcessing(true);
+    setProcessing(true)
     try {
       const res = await fetch('/api/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: total, receipt: 'bhj_' + Date.now() }),
-      });
-      if (!res.ok) throw new Error('Failed to create order');
-      const order = await res.json();
+      })
+      if (!res.ok) throw new Error('Failed to create order')
+      const order = await res.json()
 
-      const scriptLoaded = await loadRazorpayScript();
+      const scriptLoaded = await loadRazorpayScript()
       if (!scriptLoaded) {
-        toast('Failed to load payment gateway');
-        setProcessing(false);
-        return;
+        toast('Failed to load payment gateway')
+        setProcessing(false)
+        return
       }
 
       const options = {
@@ -76,17 +95,17 @@ export default function CheckoutPage() {
         handler: async function (response: any) {
           try {
             const orderData = await placeOrderDb({
-              name, phone, email, address, city, pincode,
+              name, phone, email, address, city, state, pincode,
               payment: 'razorpay',
               cart, total,
               razorpayPaymentId: response.razorpay_payment_id,
-            });
-            saveCart([]);
-            window.dispatchEvent(new Event('cart-update'));
-            router.push(`/order-confirmed?id=${orderData.id}`);
+            })
+            saveCart([])
+            window.dispatchEvent(new Event('cart-update'))
+            router.push(`/order-confirmed?id=${orderData.id}`)
           } catch {
-            toast('Failed to save order. Please contact us.');
-            setProcessing(false);
+            toast('Failed to save order. Please contact us.')
+            setProcessing(false)
           }
         },
         prefill: { name, email, contact: phone },
@@ -94,41 +113,51 @@ export default function CheckoutPage() {
         modal: {
           ondismiss: () => setProcessing(false),
         },
-      };
+      }
 
-      const rzp = new (window as any).Razorpay(options);
+      const rzp = new (window as any).Razorpay(options)
       rzp.on('payment.failed', function () {
-        toast('Payment failed. Please try again.');
-        setProcessing(false);
-      });
-      rzp.open();
+        toast('Payment failed. Please try again.')
+        setProcessing(false)
+      })
+      rzp.open()
     } catch {
-      toast('Something went wrong. Please try again.');
-      setProcessing(false);
+      toast('Something went wrong. Please try again.')
+      setProcessing(false)
     }
-  };
+  }
+
+  const validate = () => {
+    const errs: Record<string, string> = {}
+    if (cart.length === 0) { errs.cart = 'Your cart is empty!' }
+    if (!phone || !/^\d{10}$/.test(phone)) errs.phone = 'Enter a valid 10-digit phone number'
+    if (!pincode || !/^\d{6}$/.test(pincode)) errs.pincode = 'Enter a valid 6-digit pincode'
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Enter a valid email address'
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (cart.length === 0) {
-      toast('Your cart is empty!');
-      return;
-    }
+    e.preventDefault()
+    if (!validate()) return
+    if (processing) return
+    setProcessing(true)
     if (payment === 'razorpay') {
-      await handleRazorpayPayment();
+      await handleRazorpayPayment()
     } else {
       try {
-        const order = await placeOrderDb({ name, phone, email, address, city, pincode, payment: 'cod', cart, total });
-        saveCart([]);
-        window.dispatchEvent(new Event('cart-update'));
-        router.push(`/order-confirmed?id=${order.id}`);
+        const order = await placeOrderDb({ name, phone, email, address, city, state, pincode, payment: 'cod', cart, total })
+        saveCart([])
+        window.dispatchEvent(new Event('cart-update'))
+        router.push(`/order-confirmed?id=${order.id}`)
       } catch {
-        toast('Failed to place order. Please try again.');
+        toast('Failed to place order. Please try again.')
+        setProcessing(false)
       }
     }
-  };
+  }
 
-  if (!loaded) return null;
+  if (authLoading || !loaded) return null
 
   if (cart.length === 0) {
     return (
@@ -138,7 +167,7 @@ export default function CheckoutPage() {
           <p style={{ color: 'rgba(58,36,26,0.45)' }}>Your cart is empty. <a href="/shop" style={{ color: '#eab704' }}>Shop now →</a></p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -155,15 +184,9 @@ export default function CheckoutPage() {
           <div className="contact-grid">
             <div>
               <form onSubmit={handleSubmit}>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="c-name">Full Name *</label>
-                    <input id="c-name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="c-phone">Phone *</label>
-                    <input id="c-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
-                  </div>
+                <div className="form-group">
+                  <label htmlFor="c-name">Full Name *</label>
+                  <input id="c-name" type="text" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                 <div className="form-group">
                   <label htmlFor="c-email">Email</label>
@@ -179,10 +202,23 @@ export default function CheckoutPage() {
                     <input id="c-city" type="text" value={city} onChange={(e) => setCity(e.target.value)} required />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="c-pincode">Pincode *</label>
-                    <input id="c-pincode" type="text" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
+                    <label htmlFor="c-state">State *</label>
+                    <input id="c-state" type="text" value={state} onChange={(e) => setState(e.target.value)} required />
                   </div>
                 </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="c-pincode">Pincode *</label>
+                    <input id="c-pincode" type="text" value={pincode} onChange={(e) => setPincode(e.target.value)} required />
+                    {errors.pincode && <span style={{ fontSize: 11, color: '#d32f2f', marginTop: 4, display: 'block' }}>{errors.pincode}</span>}
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="c-phone">Phone *</label>
+                    <input id="c-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                    {errors.phone && <span style={{ fontSize: 11, color: '#d32f2f', marginTop: 4, display: 'block' }}>{errors.phone}</span>}
+                  </div>
+                </div>
+                {errors.email && <span style={{ fontSize: 11, color: '#d32f2f', marginTop: 4, display: 'block' }}>{errors.email}</span>}
 
                 <div className="form-group">
                   <label>Payment Method</label>
@@ -209,8 +245,8 @@ export default function CheckoutPage() {
                 <div style={{ background: '#fff', borderRadius: 14, boxShadow: '0 2px 16px rgba(58,36,26,0.06)', overflow: 'hidden' }}>
                   <div style={{ padding: '18px 20px' }}>
                     {cart.map((item) => {
-                      const product = Object.values(PRODUCTS).find((p) => p.id === item.id);
-                      const price = product?.variants[item.variant]?.price ?? 0;
+                      const product = products.find((p: any) => p.id === item.id)
+                      const price = product?.variants[item.variant]?.price ?? 0
                       return (
                         <div key={`${item.id}-${item.variant}`} style={{ display: 'flex', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(58,36,26,0.04)' }}>
                           <div style={{ width: 52, height: 52, borderRadius: 8, background: '#f9f6ef', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
@@ -225,7 +261,7 @@ export default function CheckoutPage() {
                           </div>
                           <div style={{ fontSize: 14, fontWeight: 600, color: '#3A241A', display: 'flex', alignItems: 'center' }}>₹{price * item.qty}</div>
                         </div>
-                      );
+                      )
                     })}
                   </div>
                   <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(58,36,26,0.06)', background: '#faf8f5' }}>
@@ -246,5 +282,5 @@ export default function CheckoutPage() {
         </div>
       </div>
     </>
-  );
+  )
 }

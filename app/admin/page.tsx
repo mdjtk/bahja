@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from '@/components/Toast';
+import AdminProducts from '@/components/AdminProducts';
 
 interface Order {
   id: number;
@@ -35,21 +37,30 @@ interface Contact {
   created_at: string;
 }
 
+const STATUSES = ['Confirmed', 'Preparing', 'Dispatched', 'Out for Delivery', 'Delivered'];
+
 export default function AdminPage() {
   const router = useRouter();
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [tab, setTab] = useState<'orders' | 'subscribers' | 'contacts'>('orders');
+  const [tab, setTab] = useState<'orders' | 'subscribers' | 'contacts' | 'products'>('orders');
   const [expanded, setExpanded] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/orders').then(async (res) => {
+    fetch('/api/admin/check', { method: 'POST' }).then(async (res) => {
       if (res.ok) {
-        setOrders(await res.json());
         setAuthed(true);
+        const [o, s, c] = await Promise.all([
+          fetch('/api/orders').then((r) => r.json()),
+          fetch('/api/subscribers').then((r) => r.json()),
+          fetch('/api/contacts').then((r) => r.json()),
+        ]);
+        setOrders(Array.isArray(o) ? o : []);
+        setSubscribers(Array.isArray(s) ? s : []);
+        setContacts(Array.isArray(c) ? c : []);
       } else {
         setAuthed(false);
       }
@@ -60,36 +71,29 @@ export default function AdminPage() {
     });
   }, []);
 
-  useEffect(() => {
-    if (authed === true) {
-      fetch('/api/subscribers').then(async (r) => {
-        if (r.ok) setSubscribers(await r.json());
+  const updateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const res = await fetch('/api/orders/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId, status: newStatus }),
       });
-      fetch('/api/contacts').then(async (r) => {
-        if (r.ok) setContacts(await r.json());
-      });
-    }
-  }, [authed]);
-
-  const checkAuth = async () => {
-    const res = await fetch('/api/orders');
-    if (res.ok) {
-      setOrders(await res.json());
-      setAuthed(true);
-    } else {
-      router.push('/admin/login');
+      if (!res.ok) throw new Error();
+      setOrders((prev) => prev.map((o) => o.order_id === orderId ? { ...o, status: newStatus } : o));
+      toast(`Status updated to "${newStatus}"`);
+    } catch {
+      toast('Failed to update status');
     }
   };
 
-  useEffect(() => { checkAuth() }, [router]);
+  useEffect(() => {
+    if (authed === false) {
+      router.push('/admin/login');
+    }
+  }, [authed, router]);
 
-  if (authed === false) {
-    router.push('/admin/login');
-    return null;
-  }
-
+  if (authed === false || !authed) return null;
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: 'rgba(58,36,26,0.4)' }}>Loading…</div>;
-  if (!authed) return null;
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
 
@@ -112,7 +116,7 @@ export default function AdminPage() {
           </div>
 
           <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid rgba(58,36,26,0.08)' }}>
-            {(['orders', 'subscribers', 'contacts'] as const).map((t) => (
+            {(['orders', 'subscribers', 'contacts', 'products'] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)} style={{ padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: tab === t ? '#eab704' : 'rgba(58,36,26,0.4)', borderBottom: tab === t ? '2px solid #eab704' : '2px solid transparent', marginBottom: -2, textTransform: 'capitalize', letterSpacing: 0.5 }}>{t}</button>
             ))}
           </div>
@@ -143,7 +147,18 @@ export default function AdminPage() {
                           <div><strong>Address:</strong> {order.address}{order.city ? `, ${order.city}` : ''}{order.pincode ? ` — ${order.pincode}` : ''}</div>
                           <div><strong>Payment:</strong> {order.payment_method === 'razorpay' ? 'Online (Razorpay)' : 'Cash on Delivery'}</div>
                           {order.razorpay_payment_id && <div><strong>Payment ID:</strong> {order.razorpay_payment_id}</div>}
-                          <div><strong>Status:</strong> {order.status}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                            <strong>Status:</strong>
+                            <select
+                              value={order.status}
+                              onChange={(e) => updateStatus(order.order_id, e.target.value)}
+                              style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(58,36,26,0.15)', fontSize: 12, background: '#fff', cursor: 'pointer' }}
+                            >
+                              {STATUSES.map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
+                          </div>
                           <div style={{ borderTop: '1px solid rgba(58,36,26,0.06)', margin: '8px 0', paddingTop: 8 }}>
                             <strong>Items:</strong>
                             {order.items.map((item: any, i: number) => (
@@ -166,6 +181,8 @@ export default function AdminPage() {
                   ))}
                 </div>
           )}
+
+          {tab === 'products' && <AdminProducts />}
 
           {tab === 'contacts' && (
             contacts.length === 0

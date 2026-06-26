@@ -26,7 +26,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const cookie = req.headers.get('cookie') || '';
+  const hasAdmin = cookie.split(';').some((c) => c.trim().startsWith('bahja_admin='));
+  if (!hasAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { data, error } = await supabase
       .from('bahja_subscribers')
