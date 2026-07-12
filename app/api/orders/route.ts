@@ -3,8 +3,8 @@ import Razorpay from 'razorpay'
 import { supabaseAdmin } from '@/lib/supabase'
 import { verifyAuth, isAdmin } from '@/lib/auth-helpers'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { deductStock } from '@/lib/inventory'
 import { sendNewOrderNotification } from '@/lib/notifications'
+import { deductStock } from '@/lib/inventory'
 
 function sanitize(val: unknown): string {
   if (typeof val !== 'string') return ''

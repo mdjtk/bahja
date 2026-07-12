@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS bahja_inventory (
 -- ON CONFLICT (product_id, variant_key) DO NOTHING;
 
 -- Helper function to safely decrement inventory
+-- If no inventory record exists, treat as unlimited stock (silently succeed)
 CREATE OR REPLACE FUNCTION decrement_inventory(
   p_product_id TEXT,
   p_variant_key TEXT,
@@ -75,7 +76,15 @@ BEGIN
   SET stock = stock - p_qty, updated_at = now()
   WHERE product_id = p_product_id AND variant_key = p_variant_key AND stock >= p_qty;
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Insufficient stock for % / % (requested %)', p_product_id, p_variant_key, p_qty;
+    -- No matching record, or insufficient stock
+    -- Check if a record exists at all
+    PERFORM 1 FROM bahja_inventory
+    WHERE product_id = p_product_id AND variant_key = p_variant_key;
+    IF FOUND THEN
+      -- Record exists but insufficient stock
+      RAISE EXCEPTION 'Insufficient stock for % / % (requested %)', p_product_id, p_variant_key, p_qty;
+    END IF;
+    -- No record = product not tracked in inventory = unlimited stock
   END IF;
 END;
 $$ LANGUAGE plpgsql;
