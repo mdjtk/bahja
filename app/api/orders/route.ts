@@ -4,7 +4,6 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { verifyAuth, isAdmin } from '@/lib/auth-helpers'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendNewOrderNotification } from '@/lib/notifications'
-import { deductStock } from '@/lib/inventory'
 
 function sanitize(val: unknown): string {
   if (typeof val !== 'string') return ''
@@ -80,27 +79,42 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Atomic stock check + deduct (prevents overselling)
+    // Stock deduction — skip items without inventory records (unlimited stock)
     const deductions: string[] = []
     for (const item of body.items) {
-      const { error: deductErr } = await supabaseAdmin.rpc('decrement_inventory', {
-        p_product_id: item.id,
-        p_variant_key: item.variant,
-        p_qty: item.qty,
-      })
-      if (deductErr) {
-        // Rollback any successful deductions
-        for (const r of deductions) {
-          const [rid, rvar, rqty] = r.split('|')
-          try {
-            await supabaseAdmin.rpc('decrement_inventory', {
-              p_product_id: rid, p_variant_key: rvar, p_qty: -Number(rqty),
-            })
-          } catch {} /* best-effort rollback */
+      const { data: invRecord, error: invErr } = await supabaseAdmin
+        .from('bahja_inventory')
+        .select('stock')
+        .eq('product_id', item.id)
+        .eq('variant_key', item.variant)
+        .maybeSingle()
+
+      if (invErr) console.error('Inventory check error:', invErr)
+
+      if (invRecord) {
+        if (invRecord.stock < item.qty) {
+          return NextResponse.json({ error: `Insufficient stock for ${item.id} (${item.variant})` }, { status: 409 })
         }
-        return NextResponse.json({ error: `Insufficient stock for ${item.id} (${item.variant})` }, { status: 409 })
+        const { error: deductErr } = await supabaseAdmin.rpc('decrement_inventory', {
+          p_product_id: item.id,
+          p_variant_key: item.variant,
+          p_qty: item.qty,
+        })
+        if (deductErr) {
+          // Rollback any successful deductions
+          for (const r of deductions) {
+            const [rid, rvar, rqty] = r.split('|')
+            try {
+              await supabaseAdmin.rpc('decrement_inventory', {
+                p_product_id: rid, p_variant_key: rvar, p_qty: -Number(rqty),
+              })
+            } catch {} /* best-effort rollback */
+          }
+          return NextResponse.json({ error: `Insufficient stock for ${item.id} (${item.variant})` }, { status: 409 })
+        }
+        deductions.push(`${item.id}|${item.variant}|${item.qty}`)
       }
-      deductions.push(`${item.id}|${item.variant}|${item.qty}`)
+      // No inventory record = product not tracked = unlimited stock
     }
 
     const { data, error } = await supabaseAdmin

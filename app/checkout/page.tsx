@@ -153,7 +153,8 @@ export default function CheckoutPage() {
             saveCart([])
             window.dispatchEvent(new Event('cart-update'))
             router.push(`/order-confirmed?id=${orderData.id}`)
-          } catch {
+          } catch (err) {
+            console.error('[Checkout] Razorpay placeOrderDb error:', err)
             toast('Failed to save order. Please contact us.')
             setProcessing(false)
           }
@@ -203,7 +204,8 @@ export default function CheckoutPage() {
         saveCart([])
         window.dispatchEvent(new Event('cart-update'))
         router.push(`/order-confirmed?id=${order.id}`)
-      } catch {
+      } catch (err) {
+        console.error('[Checkout] placeOrderDb error:', err)
         toast('Failed to place order. Please try again.')
         setProcessing(false)
       }

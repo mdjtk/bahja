@@ -135,7 +135,9 @@ export async function placeOrderDb(data: {
   });
 
   if (!res.ok) {
-    throw new Error('Failed to place order');
+    const errBody = await res.text().catch(() => '');
+    console.error(`[placeOrderDb] ${res.status} ${res.statusText}:`, errBody);
+    throw new Error(`Failed to place order (${res.status})`);
   }
 
   const order: OrderInfo = {
