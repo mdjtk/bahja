@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 import { fetchWithAuth } from '@/lib/fetch-with-auth'
 import { loadCart, savePhoneLocal } from '@/lib/store'
@@ -77,24 +77,50 @@ function LoginForm() {
     router.push(redirect)
   }
 
+  const handleSignInResult = useCallback(async (user: import('firebase/auth').User) => {
+    if (!user.phoneNumber) {
+      setShowPhonePrompt(true)
+      setLoading(false)
+      return
+    }
+    await finishSignIn()
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    getRedirectResult(auth).then((result) => {
+      if (!mounted || !result) return
+      console.log('[Login] Redirect sign-in success:', result.user.uid, result.user.email)
+      handleSignInResult(result.user)
+    }).catch((err) => {
+      if (mounted) console.error('[Login] Redirect result error:', err.code, err.message)
+    })
+    return () => { mounted = false }
+  }, [handleSignInResult])
+
   const signInWithGoogle = async () => {
     setLoading(true)
     try {
       const provider = new GoogleAuthProvider()
       const result = await signInWithPopup(auth, provider)
       console.log('[Login] Google sign-in success:', result.user.uid, result.user.email)
-      if (!result.user.phoneNumber) {
-        setShowPhonePrompt(true)
-        setLoading(false)
-        return
-      }
-      await finishSignIn()
+      await handleSignInResult(result.user)
     } catch (err: any) {
       console.error('[Login] Google sign-in error:', err.code, err.message)
-      if (err.code !== 'auth/popup-closed-by-user') {
-        toast(err.message || 'Google sign-in failed')
+      if (err.code === 'auth/popup-closed-by-user') {
+        console.log('[Login] Falling back to signInWithRedirect')
+        try {
+          const provider = new GoogleAuthProvider()
+          await signInWithRedirect(auth, provider)
+        } catch (redirectErr: any) {
+          console.error('[Login] Redirect fallback also failed:', redirectErr.code, redirectErr.message)
+          toast('Sign-in failed. Please check your browser settings and try again.')
+          setLoading(false)
+        }
+        return
       }
-    } finally {
+      toast(err.message || 'Google sign-in failed')
       setLoading(false)
     }
   }
