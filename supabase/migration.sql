@@ -79,3 +79,15 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Notification log table — audit trail for admin order alerts
+CREATE TABLE IF NOT EXISTS bahja_notification_log (
+  id BIGSERIAL PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES bahja_orders(order_id),
+  channel TEXT NOT NULL,
+  status TEXT NOT NULL,
+  error TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_log_order_id ON bahja_notification_log(order_id);

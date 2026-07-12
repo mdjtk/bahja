@@ -1,46 +1,67 @@
-interface OrderConfirmationPayload {
-  email?: string
+import { supabaseAdmin } from '@/lib/supabase'
+import { sendOrderAlertViaWhatsApp } from '@/lib/whatsapp'
+
+function getTeamPhones(): string[] {
+  const raw = process.env.NOTIFICATION_TEAM_PHONES || ''
+  return raw
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+}
+
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  if (digits.length === 10) return '91' + digits
+  if (digits.length === 12 && digits.startsWith('91')) return digits
+  return digits
+}
+
+export async function sendNewOrderNotification(params: {
+  customerName: string
   phone: string
-  name: string
   orderId: string
   total: number
   items: Array<{ name: string; variant: string; qty: number; price: number }>
-}
+}): Promise<void> {
+  const phones = getTeamPhones()
+  if (phones.length === 0) {
+    console.warn('No NOTIFICATION_TEAM_PHONES configured — skipping WhatsApp alert')
+    return
+  }
 
-export async function sendOrderConfirmation(payload: OrderConfirmationPayload): Promise<void> {
-  if (payload.email) {
+  for (const rawPhone of phones) {
+    const phone = formatPhone(rawPhone)
     try {
-      const res = await fetch(process.env.NOTIFICATION_WEBHOOK_URL || '', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'order_confirmation',
-          to: payload.email,
-          ...payload,
-        }),
+      await sendOrderAlertViaWhatsApp({
+        phone,
+        customerName: params.customerName,
+        orderId: params.orderId,
+        total: params.total,
+        items: params.items,
       })
-      if (!res.ok) console.error('Notification webhook returned', res.status)
-    } catch (err) {
-      console.error('Failed to send email notification:', err)
+      console.log(`WhatsApp alert sent to ${phone} for order ${params.orderId}`)
+      await logNotification(params.orderId, 'whatsapp', 'sent')
+    } catch (err: any) {
+      console.error(`WhatsApp alert failed for ${phone}:`, err.message)
+      await logNotification(params.orderId, 'whatsapp', 'failed', err.message)
     }
   }
 }
 
-export async function sendAdminNotification(orderId: string, total: number, customerName: string): Promise<void> {
-  const webhookUrl = process.env.ADMIN_NOTIFICATION_WEBHOOK_URL || process.env.NOTIFICATION_WEBHOOK_URL
-  if (!webhookUrl) return
+async function logNotification(
+  orderId: string,
+  channel: string,
+  status: 'sent' | 'failed',
+  error?: string,
+): Promise<void> {
   try {
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'new_order_admin',
-        orderId,
-        total,
-        customerName,
-      }),
+    await supabaseAdmin.from('bahja_notification_log').insert({
+      order_id: orderId,
+      channel,
+      status,
+      error: error || null,
     })
-  } catch (err) {
-    console.error('Failed to send admin notification:', err)
+  } catch (dbErr) {
+    console.error('Failed to log notification:', dbErr)
   }
 }

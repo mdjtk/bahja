@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { verifyAuth, isAdmin } from '@/lib/auth-helpers'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { deductStock } from '@/lib/inventory'
-import { sendOrderConfirmation, sendAdminNotification } from '@/lib/notifications'
+import { sendNewOrderNotification } from '@/lib/notifications'
 
 function sanitize(val: unknown): string {
   if (typeof val !== 'string') return ''
@@ -127,17 +127,14 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error
 
-    // Send notifications (non-blocking)
-    sendOrderConfirmation({
-      email: body.email,
+    // Send WhatsApp alert to team (non-blocking)
+    sendNewOrderNotification({
+      customerName: body.customer_name,
       phone: body.phone,
-      name: body.customer_name,
       orderId: body.order_id,
       total: computedTotal,
       items: body.items,
     }).catch(console.error)
-
-    sendAdminNotification(body.order_id, computedTotal, body.customer_name).catch(console.error)
 
     return NextResponse.json(data, { status: 201 })
   } catch (err: any) {
