@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
+import { isAdmin } from '@/lib/auth-helpers'
 
 function mapProduct(p: any) {
   return {
@@ -14,20 +15,19 @@ function mapProduct(p: any) {
     variants: p.variants,
     active: p.active,
     created_at: p.created_at,
-  };
+  }
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const cookie = req.headers.get('cookie') || '';
-  const hasAdmin = cookie.split(';').some((c) => c.trim().startsWith('bahja_admin='));
-  if (!hasAdmin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!isAdmin(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const { id } = await params;
-    const body = await req.json();
-    const { data, error } = await supabase
+    const { id } = await params
+    const body = await req.json()
+
+    const { data, error } = await supabaseAdmin
       .from('bahja_products')
       .update({
         name: body.name,
@@ -36,41 +36,54 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         image: body.image,
         rating: body.rating,
         description: body.description,
-        variant_order: body.variantOrder,
+        variant_order: body.variantOrder || body.variant_order,
         variants: body.variants,
         active: body.active,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .select()
-      .single();
+      .single()
 
-    if (error) throw error;
-    return NextResponse.json(mapProduct(data));
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+      throw error
+    }
+    return NextResponse.json(mapProduct(data))
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Error in PUT /api/products/[id]:', err);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const cookie = req.headers.get('cookie') || '';
-  const hasAdmin = cookie.split(';').some((c) => c.trim().startsWith('bahja_admin='));
-  if (!hasAdmin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!isAdmin(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const { id } = await params;
-    const { data, error } = await supabase
+    const { id } = await params
+    const { data, error } = await supabaseAdmin
       .from('bahja_products')
-      .update({ active: false, updated_at: new Date().toISOString() })
+      .update({
+        active: false,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id)
       .select()
-      .single();
+      .single()
 
-    if (error) throw error;
-    return NextResponse.json(mapProduct(data));
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      }
+      throw error
+    }
+    return NextResponse.json(mapProduct(data))
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Error in DELETE /api/products/[id]:', err);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }

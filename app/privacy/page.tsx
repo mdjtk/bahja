@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 
 export const metadata = {

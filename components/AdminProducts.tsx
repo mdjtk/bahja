@@ -7,6 +7,7 @@ interface Variant {
   label: string;
   weight: string;
   price: number;
+  stock: number;
 }
 
 interface Product {
@@ -32,7 +33,7 @@ const defaultProduct = (): Partial<Product> => ({
   rating: 5.0,
   description: '',
   variantOrder: ['250g', '500g'],
-  variants: { '250g': { label: '250g', weight: '250g', price: 399 }, '500g': { label: '500g', weight: '500g', price: 699 } },
+  variants: { '250g': { label: '250g', weight: '250g', price: 399, stock: 0 }, '500g': { label: '500g', weight: '500g', price: 699, stock: 0 } },
   active: true,
 });
 
@@ -99,7 +100,7 @@ export default function AdminProducts() {
                 <img src={p.image} alt={p.name} style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'contain', background: '#f9f6ef' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#3A241A' }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(58,36,26,0.4)', marginTop: 1 }}>{p.type} · {Object.keys(p.variants).length} variants</div>
+                  <div style={{ fontSize: 11, color: 'rgba(58,36,26,0.4)', marginTop: 1 }}>{p.type} · {Object.keys(p.variants).length} variants{Object.values(p.variants).some((v: Variant) => v.stock <= 5 && v.stock >= 0) && <span style={{ color: '#dc2626', marginLeft: 6 }}>· Low stock!</span>}</div>
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 10, background: p.active ? '#e8f5e9' : '#fce4ec', color: p.active ? '#2e7d32' : '#c62828' }}>{p.active ? 'Active' : 'Inactive'}</span>
                 <button onClick={() => toggleActive(p)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 12, color: '#8B7355', padding: '4px 8px' }}>{p.active ? 'Deactivate' : 'Activate'}</button>
@@ -133,11 +134,12 @@ export default function AdminProducts() {
               {Object.entries(form.variants || {}).map(([key, v]) => (
                 <div key={key} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
                   <input style={{ flex: 1, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(58,36,26,0.12)', fontSize: 13 }} type="text" value={v.label} placeholder="Label" onChange={(e) => setForm({ ...form, variants: { ...form.variants, [key]: { ...v, label: e.target.value } } })} />
-                  <input style={{ width: 80, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(58,36,26,0.12)', fontSize: 13 }} type="text" value={v.weight} placeholder="Weight" onChange={(e) => setForm({ ...form, variants: { ...form.variants, [key]: { ...v, weight: e.target.value } } })} />
-                  <input style={{ width: 90, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(58,36,26,0.12)', fontSize: 13 }} type="number" value={v.price} placeholder="Price" onChange={(e) => setForm({ ...form, variants: { ...form.variants, [key]: { ...v, price: parseInt(e.target.value) || 0 } } })} />
+                  <input style={{ width: 70, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(58,36,26,0.12)', fontSize: 13 }} type="text" value={v.weight} placeholder="Weight" onChange={(e) => setForm({ ...form, variants: { ...form.variants, [key]: { ...v, weight: e.target.value } } })} />
+                  <input style={{ width: 80, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(58,36,26,0.12)', fontSize: 13 }} type="number" value={v.price} placeholder="Price" onChange={(e) => setForm({ ...form, variants: { ...form.variants, [key]: { ...v, price: parseInt(e.target.value) || 0 } } })} />
+                  <input style={{ width: 65, padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(58,36,26,0.12)', fontSize: 13 }} type="number" value={v.stock ?? 0} placeholder="Stock" onChange={(e) => setForm({ ...form, variants: { ...form.variants, [key]: { ...v, stock: parseInt(e.target.value) || 0 } } })} />
                 </div>
               ))}
-              <button onClick={() => { const k = `variant_${Date.now()}`; setForm({ ...form, variants: { ...form.variants, [k]: { label: '', weight: '', price: 0 } } }); }} style={{ padding: '6px 14px', border: '1px dashed rgba(58,36,26,0.2)', borderRadius: 6, background: 'none', cursor: 'pointer', fontSize: 12, color: '#8B7355' }}>+ Add variant</button>
+              <button onClick={() => { const k = `variant_${Date.now()}`; setForm({ ...form, variants: { ...form.variants, [k]: { label: '', weight: '', price: 0, stock: 0 } } }); }} style={{ padding: '6px 14px', border: '1px dashed rgba(58,36,26,0.2)', borderRadius: 6, background: 'none', cursor: 'pointer', fontSize: 12, color: '#8B7355' }}>+ Add variant</button>
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>

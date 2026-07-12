@@ -1,27 +1,26 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { sendPasswordResetEmail } from 'firebase/auth'
+import { auth } from '@/lib/firebase'
 import { toast } from '@/components/Toast'
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: location.origin + '/auth/update-password',
-    })
-    setLoading(false)
-    if (error) {
-      toast(error.message)
-      return
+    try {
+      await sendPasswordResetEmail(auth, email)
+      setSent(true)
+    } catch (err: any) {
+      toast(err.message || 'Failed to send reset email')
+    } finally {
+      setLoading(false)
     }
-    setSent(true)
   }
 
   return (
@@ -37,7 +36,6 @@ export default function ResetPasswordPage() {
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 2px 16px rgba(58,36,26,0.06)' }}>
             {sent ? (
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>✉️</div>
                 <p style={{ fontSize: 14, color: 'rgba(58,36,26,0.6)' }}>Check your email for a password reset link.</p>
               </div>
             ) : (

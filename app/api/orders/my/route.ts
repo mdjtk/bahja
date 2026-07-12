@@ -1,22 +1,24 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase'
+import { verifyAuth } from '@/lib/auth-helpers'
 
-export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export async function GET(req: Request) {
+  const user = await verifyAuth(req)
   if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  const { data, error } = await supabase
-    .from('bahja_orders')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('bahja_orders')
+      .select('*')
+      .eq('user_id', user.uid)
+      .order('created_at', { ascending: false })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) throw error
+    return NextResponse.json(data)
+  } catch (err: any) {
+    console.error('Error in GET /api/orders/my:', err);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
-
-  return NextResponse.json(data || [])
 }

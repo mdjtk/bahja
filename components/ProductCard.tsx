@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Product } from '@/lib/data'
 import { saveCart, CartItem, loadCart, addToCartWithQty } from '@/lib/store'
 import { useAuth } from './AuthProvider'
@@ -37,19 +38,25 @@ export default function ProductCard({ product }: { product: Product }) {
     router.push('/checkout')
   }
 
+  const productUrl = `/shop/${encodeURIComponent(product.slug)}`
+
   return (
     <div className="product-card">
-      <div className="img-wrap">
-        <div className="img-frame">
-          <img src={product.image} alt={product.name} />
-          <div className="rating-pill">★ {product.rating}</div>
+      <Link href={productUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <div className="img-wrap">
+          <div className="img-frame">
+            <img src={product.image} alt={product.name} />
+            <div className="rating-pill">★ {product.rating}</div>
+          </div>
         </div>
-      </div>
+      </Link>
       <div className="p-body">
-        <div className="p-type">{product.type}</div>
-        <h3>{product.name}</h3>
-        <p className="p-desc">{product.description}</p>
-        <div className="v-row">
+        <Link href={productUrl} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="p-type">{product.type}</div>
+          <h3>{product.name}</h3>
+          <p className="p-desc">{product.description}</p>
+        </Link>
+        <div className="v-row" onClick={(e) => e.stopPropagation()}>
           {product.variantOrder.map((v) => (
             <button
               key={v}
@@ -60,7 +67,7 @@ export default function ProductCard({ product }: { product: Product }) {
             </button>
           ))}
         </div>
-        <button className="btn-buy-now" onClick={handleBuyNow}>
+        <button className="btn-buy-now" onClick={(e) => { e.stopPropagation(); handleBuyNow(); }}>
           Shop Now →
         </button>
         <div className="footer-row">
@@ -68,7 +75,12 @@ export default function ProductCard({ product }: { product: Product }) {
             <span className="cur">₹{price}</span>
             {oldPrice && <span className="old">₹{oldPrice}</span>}
           </div>
-          <button className="fab" onClick={handleAdd}>+</button>
+          <Link href={productUrl} style={{ textDecoration: 'none' }}>
+            <button className="btn-view-details" onClick={(e) => e.stopPropagation()}>
+              View Details
+            </button>
+          </Link>
+          <button className="fab" onClick={(e) => { e.stopPropagation(); handleAdd(); }}>+</button>
         </div>
       </div>
     </div>

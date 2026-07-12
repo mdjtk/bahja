@@ -86,7 +86,7 @@ function OrderContent() {
         <div style={{ background: '#fef9e7', borderRadius: 12, padding: 20, marginBottom: 24, fontSize: 13, color: 'rgba(58,36,26,0.55)', lineHeight: 1.6 }}>
           <strong style={{ color: '#3A241A' }}>💡 What happens next?</strong>
           <br />
-          We&rsquo;ll dispatch your order within 24 hours. You&rsquo;ll receive a tracking ID via WhatsApp once shipped. For any queries, reach out to us on <a href="https://wa.me/918086872603" target="_blank" rel="noopener" style={{ color: '#eab704', textDecoration: 'underline' }}>WhatsApp</a>.
+          We&rsquo;ll dispatch your order within 24 hours. You&rsquo;ll receive a tracking ID via WhatsApp once shipped. For any queries, reach out to us on <a href="https://wa.me/918086872603" target="_blank" rel="noopener noreferrer" style={{ color: '#eab704', textDecoration: 'underline' }}>WhatsApp</a>.
         </div>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>

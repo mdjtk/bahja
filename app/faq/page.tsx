@@ -34,7 +34,7 @@ const faqs = [
   },
   {
     q: 'Do you offer bulk orders for businesses?',
-    a: 'Yes! We supply honey for corporate gifting, hotels, cafes, and resellers. <a href="/contact" style="color:#eab704;text-decoration:underline">Contact us</a> through our contact page or WhatsApp for bulk pricing.',
+    a: 'Yes! We supply honey for corporate gifting, hotels, cafes, and resellers. Contact us through our contact page or WhatsApp for bulk pricing.',
   },
 ];
 
@@ -62,11 +62,9 @@ export default function FAQPage() {
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </div>
-            {openIdx === i && (
-              <div className="faq-a">
-                <p dangerouslySetInnerHTML={{ __html: faq.a }} />
-              </div>
-            )}
+            <div className={`faq-a${openIdx === i ? ' open' : ''}`}>
+              <p>{faq.a}</p>
+            </div>
           </div>
         ))}
       </div>

@@ -1,4 +1,4 @@
-import { PRODUCTS } from './data';
+import { fetchWithAuth } from './fetch-with-auth';
 
 export interface CartItem {
   id: string;
@@ -36,6 +36,7 @@ const ORDERS_KEY = 'bahja_orders';
 const ORDER_KEY = 'bahja_order';
 const ORDER_ID_KEY = 'bahja_order_id';
 const WISHLIST_KEY = 'bahja_wishlist';
+const PHONE_KEY = 'bahja_phone';
 
 export function loadCart(): CartItem[] {
   try {
@@ -95,9 +96,10 @@ export async function placeOrderDb(data: {
   address: string; city?: string; state?: string; pincode?: string;
   payment: string; cart: CartItem[]; total: number;
   razorpayPaymentId?: string;
+  productsMap?: Record<string, { name: string; variants: Record<string, { price: number }> }>;
 }): Promise<OrderInfo> {
   const items: OrderItem[] = data.cart.map((item) => {
-    const product = PRODUCTS[item.id];
+    const product = data.productsMap?.[item.id];
     const variant = product?.variants[item.variant];
     return {
       id: item.id,
@@ -110,7 +112,7 @@ export async function placeOrderDb(data: {
 
   const total = data.total;
 
-  const orderId = 'BHJ-' + Date.now().toString(36).toUpperCase();
+  const orderId = 'BHJ-' + crypto.randomUUID().slice(0, 8).toUpperCase();
 
   const payload = {
     order_id: orderId,
@@ -127,9 +129,8 @@ export async function placeOrderDb(data: {
     razorpay_payment_id: data.razorpayPaymentId,
   };
 
-  const res = await fetch('/api/orders', {
+  const res = await fetchWithAuth('/api/orders', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
@@ -174,19 +175,19 @@ export async function getOrderByIdDb(id: string): Promise<OrderInfo | undefined>
     const local = localOrders.find((o) => o.id === id);
     if (local) return local;
 
-    const res = await fetch(`/api/orders/${encodeURIComponent(id)}`);
+    const res = await fetchWithAuth(`/api/orders/${encodeURIComponent(id)}`);
     if (!res.ok) return undefined;
     const dbOrder = await res.json();
     return {
       id: dbOrder.order_id,
       items: dbOrder.items,
-      name: dbOrder.customer_name,
-      phone: dbOrder.phone,
-      email: dbOrder.email,
-      address: dbOrder.address,
-      city: dbOrder.city,
-      state: dbOrder.state,
-      pincode: dbOrder.pincode,
+      name: dbOrder.customer_name || '',
+      phone: dbOrder.phone || '',
+      email: dbOrder.email || '',
+      address: dbOrder.address || '',
+      city: dbOrder.city || '',
+      state: dbOrder.state || '',
+      pincode: dbOrder.pincode || '',
       payment: dbOrder.payment_method,
       total: dbOrder.total,
       date: dbOrder.created_at,
@@ -224,42 +225,7 @@ export async function getAllOrdersDb(): Promise<OrderInfo[]> {
   }
 }
 
-export function placeOrder(data: Omit<OrderInfo, 'id' | 'date' | 'items'> & { cart: CartItem[] } & { razorpayPaymentId?: string }): OrderInfo {
-  const items: OrderItem[] = data.cart.map((item) => {
-    const product = PRODUCTS[item.id];
-    const variant = product?.variants[item.variant];
-    return {
-      id: item.id,
-      variant: item.variant,
-      qty: item.qty,
-      name: product?.name || item.id,
-      price: variant?.price || 0,
-    };
-  });
-  const order: OrderInfo = {
-    id: 'BHJ-' + Date.now().toString(36).toUpperCase(),
-    items,
-    name: data.name,
-    phone: data.phone,
-    email: data.email,
-    address: data.address,
-    city: data.city,
-    state: data.state,
-    pincode: data.pincode,
-    payment: data.payment,
-    total: data.total,
-    date: new Date().toISOString(),
-    status: 'Confirmed',
-    razorpayPaymentId: data.razorpayPaymentId,
-  };
-  localStorage.setItem(ORDER_ID_KEY, order.id);
-  localStorage.setItem(ORDER_KEY, JSON.stringify(order));
-  const orders: OrderInfo[] = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
-  orders.push(order);
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-  localStorage.removeItem(CART_KEY);
-  return order;
-}
+
 
 export function getOrderById(id: string): OrderInfo | undefined {
   try {
@@ -340,6 +306,14 @@ export function toggleWishlist(id: string): string[] {
   localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlist));
   window.dispatchEvent(new Event('wishlist-update'));
   return [...wishlist];
+}
+
+export function savePhoneLocal(phone: string): void {
+  try { localStorage.setItem(PHONE_KEY, phone) } catch {}
+}
+
+export function getPhoneLocal(): string {
+  try { return localStorage.getItem(PHONE_KEY) || '' } catch { return '' }
 }
 
 export const SHIPPING_THRESHOLD = 400;

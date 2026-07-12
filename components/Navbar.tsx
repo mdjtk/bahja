@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { CartItem } from '@/lib/store'
 import { useAuth } from './AuthProvider'
 import { toast } from './Toast'
@@ -12,6 +12,8 @@ export default function Navbar({ cart }: { cart: CartItem[] }) {
   const router = useRouter()
   const { user, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountRef = useRef<HTMLDivElement>(null)
 
   const isActive = (path: string) => pathname === path || (path !== '/' && pathname.startsWith(path))
 
@@ -34,11 +36,29 @@ export default function Navbar({ cart }: { cart: CartItem[] }) {
 
   useEffect(() => {
     close()
+    setAccountOpen(false)
   }, [pathname, close])
+
+  useEffect(() => {
+    if (!accountOpen) return
+    const handleClick = (e: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false)
+      }
+    }
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setAccountOpen(false) }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [accountOpen])
 
   const count = cart.reduce((sum, item) => sum + item.qty, 0)
 
   const handleLogout = async () => {
+    setAccountOpen(false)
     await signOut()
     toast('Logged out')
     router.push('/')
@@ -73,20 +93,44 @@ export default function Navbar({ cart }: { cart: CartItem[] }) {
               <li><Link href="/#process" className={isActive('/#process') ? 'active' : ''}>Process</Link></li>
               <li><Link href="/about" className={isActive('/about') ? 'active' : ''}>About</Link></li>
               <li><Link href="/blog" className={isActive('/blog') ? 'active' : ''}>Blog</Link></li>
-              <li><Link href="/track" className={isActive('/track') ? 'active' : ''}>Track Order</Link></li>
+              <li><Link href="/my-orders" className={isActive('/my-orders') ? 'active' : ''}>My Orders</Link></li>
+              {menuOpen && (
+                <>
+                  <li style={{ width: '100%', height: 1, background: 'rgba(58,36,26,0.08)', margin: '4px 0' }} />
+                  <li>{user ? (
+                    <Link href="/account" onClick={close} style={{ fontSize: 13, color: 'rgba(58,36,26,0.65)' }}>My Account</Link>
+                  ) : (
+                    <Link href="/auth/login?redirect=/account" onClick={close} style={{ fontSize: 13, color: 'rgba(58,36,26,0.65)' }}>Sign In</Link>
+                  )}</li>
+                  {user && <li><button onClick={handleLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'rgba(58,36,26,0.5)', fontFamily: 'inherit' }}>Logout</button></li>}
+                </>
+              )}
             </ul>
           </div>
           <div className="nav-right">
-            {user ? (
-              <>
-                <Link href="/account" className="nav-btn">My Account</Link>
-                <button onClick={handleLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'rgba(58,36,26,0.5)', padding: '4px 8px' }}>Logout</button>
-              </>
-            ) : (
-              <Link href="/auth/login?redirect=/account" className="nav-btn">Login</Link>
-            )}
-            <Link href="/track" className="nav-btn">Track</Link>
             <Link href="/shop" className="nav-btn nav-btn-primary">Shop Now</Link>
+            <div className="account-wrap" ref={accountRef}>
+              <button className="account-btn" aria-label="Account" onClick={() => setAccountOpen((v) => !v)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </button>
+              {accountOpen && (
+                <div className="account-dropdown">
+                  {user ? (
+                    <>
+                      <Link href="/account" className="account-dropdown-item" onClick={() => setAccountOpen(false)}>My Account</Link>
+                      <Link href="/my-orders" className="account-dropdown-item" onClick={() => setAccountOpen(false)}>My Orders</Link>
+                      <div className="account-dropdown-divider" />
+                      <button className="account-dropdown-item account-dropdown-logout" onClick={handleLogout}>Logout</button>
+                    </>
+                  ) : (
+                    <Link href="/auth/login?redirect=/account" className="account-dropdown-item" onClick={() => setAccountOpen(false)}>Sign In</Link>
+                  )}
+                </div>
+              )}
+            </div>
             <Link href="/cart" className="cart-wrap" aria-label="Cart">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M6.5 17.5h11l2-13h-15l2 13z"/>

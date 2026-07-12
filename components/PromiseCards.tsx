@@ -22,7 +22,7 @@ export default function PromiseCards() {
       <div className="container">
         <div className="dash"></div>
         <h2>Our Purest Promise</h2>
-        <p>Pure delicious honey, straight from the hive that helps the farmers thrive.</p>
+        <p className="promise-sub">Pure delicious honey, straight from the hive that helps the farmers thrive.</p>
         <div className="promise-grid">
           {cards.map((c, i) => (
             <div className="promise-card" key={i}>

@@ -83,7 +83,7 @@ export default function ContactPage() {
               </div>
               <div style={{ marginTop: 20, textAlign: 'center', background: '#fff', padding: 20, borderRadius: 12, boxShadow: '0 2px 12px rgba(58,36,26,0.04)' }}>
                 <p style={{ fontSize: 13, color: 'rgba(58,36,26,0.45)', marginBottom: 12 }}>Prefer chatting?</p>
-                <a href="https://wa.me/918086872603" target="_blank" rel="noopener" className="btn btn-primary" style={{ background: '#25D366' }}>Chat on WhatsApp</a>
+                <a href="https://wa.me/918086872603" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ background: '#25D366' }}>Chat on WhatsApp</a>
               </div>
             </div>
           </div>

@@ -3,23 +3,61 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { loadCart, saveCart, updateQty, removeFromCart, addToCart, getAllOrders, CartItem } from '@/lib/store';
-import { PRODUCTS } from '@/lib/data';
+import { useAuth } from '@/components/AuthProvider';
 
-const COUPONS: Record<string, { discount: number; label: string }> = {
-  BAHJA10: { discount: 0.1, label: '10% Off' },
-};
+const COUPONS_CACHE_KEY = 'bahja_coupons_cache';
+const COUPONS_CACHE_TTL = 5 * 60 * 1000;
+
+interface CouponData {
+  code: string;
+  discount_type: 'percentage' | 'flat';
+  discount_value: number;
+  min_order: number;
+  max_uses: number;
+  current_uses: number;
+  active: boolean;
+  expires_at: string | null;
+}
 
 export default function CartPage() {
+  const { user, loading } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; label: string } | null>(null);
   const [couponMsg, setCouponMsg] = useState('');
+  const [couponList, setCouponList] = useState<CouponData[]>([]);
+  const [productMap, setProductMap] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCart(loadCart());
     setLoaded(true);
+    fetch('/api/products')
+      .then((r) => r.json())
+      .then((data) => {
+        const map: Record<string, any> = {};
+        (Array.isArray(data) ? data : []).forEach((p: any) => { map[p.id] = p; });
+        setProductMap(map);
+      })
+      .catch(() => {});
+    const cached = localStorage.getItem(COUPONS_CACHE_KEY);
+    if (cached) {
+      try {
+        const { data, ts } = JSON.parse(cached);
+        if (Date.now() - ts < COUPONS_CACHE_TTL) {
+          setCouponList(data);
+          return;
+        }
+      } catch {}
+    }
+    fetch('/api/coupons')
+      .then((r) => r.json())
+      .then((data) => {
+        const active = (Array.isArray(data) ? data : []).filter((c: CouponData) => c.active);
+        setCouponList(active);
+        localStorage.setItem(COUPONS_CACHE_KEY, JSON.stringify({ data: active, ts: Date.now() }));
+      })
+      .catch(() => {});
   }, []);
 
   const refresh = () => {
@@ -31,29 +69,59 @@ export default function CartPage() {
   const handleQty = (id: string, variant: string, delta: number) => {
     const existing = cart.find((i) => i.id === id && i.variant === variant);
     if (!existing) return;
-    const newQty = existing.qty + delta;
-    if (newQty <= 0) {
-      saveCart(removeFromCart(cart, id, variant));
-    } else {
-      saveCart(updateQty(cart, id, variant, delta));
+    if (existing.qty + delta <= 0) {
+      handleRemove(id, variant);
+      return;
     }
-    refresh();
+    const updated = updateQty(cart, id, variant, delta);
+    saveCart(updated);
+    setCart(updated);
+    window.dispatchEvent(new Event('cart-update'));
   };
 
   const handleRemove = (id: string, variant: string) => {
-    saveCart(removeFromCart(cart, id, variant));
-    refresh();
+    const updated = removeFromCart(cart, id, variant);
+    saveCart(updated);
+    setCart(updated);
+    window.dispatchEvent(new Event('cart-update'));
   };
 
+  const subtotal = cart.reduce((sum, item) => {
+    const product = productMap[item.id];
+    const price = product?.variants[item.variant]?.price ?? 0;
+    return sum + price * item.qty;
+  }, 0);
+
+  let discount = 0;
+  let discountLabel = '';
+  if (appliedCoupon) {
+    discount = appliedCoupon.discount;
+    discountLabel = appliedCoupon.label;
+  }
+
+  const total = subtotal - discount;
+
   const applyCoupon = () => {
-    const code = couponCode.trim().toUpperCase();
-    if (COUPONS[code]) {
-      setAppliedCoupon({ code, ...COUPONS[code] });
-      setCouponMsg(`Coupon "${code}" applied — ${COUPONS[code].label}!`);
+    const code = couponCode.trim();
+    if (!code) { setCouponMsg('Enter a coupon code'); return; }
+    const coupon = couponList.find((c) => c.code === code.toUpperCase());
+    if (!coupon) { setCouponMsg('Invalid coupon code'); return; }
+    const now = new Date();
+    if (coupon.expires_at && new Date(coupon.expires_at) < now) { setCouponMsg('Coupon has expired'); return; }
+    if (coupon.max_uses > 0 && coupon.current_uses >= coupon.max_uses) { setCouponMsg('Coupon usage limit reached'); return; }
+    if (subtotal < coupon.min_order) { setCouponMsg(`Minimum order of ₹${coupon.min_order} required`); return; }
+
+    let disc = 0;
+    let label = '';
+    if (coupon.discount_type === 'percentage') {
+      disc = Math.round(subtotal * coupon.discount_value / 100);
+      label = `${coupon.discount_value}% off`;
     } else {
-      setAppliedCoupon(null);
-      setCouponMsg('Invalid coupon code.');
+      disc = Math.min(coupon.discount_value, subtotal);
+      label = `₹${coupon.discount_value} off`;
     }
+    setAppliedCoupon({ code: coupon.code, discount: disc, label });
+    setCouponMsg(`Coupon applied! ${label}`);
   };
 
   const removeCoupon = () => {
@@ -62,143 +130,154 @@ export default function CartPage() {
     setCouponMsg('');
   };
 
-  const subtotal = cart.reduce((sum, item) => {
-    const product = Object.values(PRODUCTS).find((p) => p.id === item.id);
-    const price = product?.variants[item.variant]?.price ?? 0;
-    return sum + price * item.qty;
-  }, 0);
-  const discount = appliedCoupon ? subtotal * appliedCoupon.discount : 0;
-  const shipping = subtotal >= 400 ? 0 : 49;
-  const total = subtotal - discount + shipping;
+  if (loading || !loaded) {
+    return (
+      <>
+        <div className="page-header">
+          <div className="container">
+            <h1>Shopping Cart</h1>
+            <div className="skeleton-shimmer" style={{ height: 16, width: 160, borderRadius: 4, marginTop: 4 }} />
+          </div>
+        </div>
+        <div className="section">
+          <div className="container">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32, alignItems: 'start' }}>
+              <div>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: '1px solid rgba(58,36,26,0.06)' }}>
+                    <div className="skeleton-shimmer" style={{ width: 56, height: 70, borderRadius: 8, flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div className="skeleton-shimmer" style={{ height: 14, width: '50%', borderRadius: 4, marginBottom: 8 }} />
+                      <div className="skeleton-shimmer" style={{ height: 12, width: '30%', borderRadius: 4, marginBottom: 12 }} />
+                      <div className="skeleton-shimmer" style={{ height: 12, width: '20%', borderRadius: 4 }} />
+                    </div>
+                    <div className="skeleton-shimmer" style={{ width: 60, height: 14, borderRadius: 4, marginTop: 4 }} />
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="cart-summary">
+                  <div className="skeleton-shimmer" style={{ height: 18, width: 120, borderRadius: 4, marginBottom: 16 }} />
+                  <div className="skeleton-shimmer" style={{ height: 14, width: '100%', borderRadius: 4, marginBottom: 8 }} />
+                  <div className="skeleton-shimmer" style={{ height: 14, width: '70%', borderRadius: 4, marginBottom: 16 }} />
+                  <div className="skeleton-shimmer" style={{ height: 40, width: '100%', borderRadius: 8 }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
 
-  if (!loaded) return null;
+  if (!user) {
+    return (
+      <>
+        <div className="page-header">
+          <div className="container">
+            <h1>Shopping Cart</h1>
+          </div>
+        </div>
+        <div className="section">
+          <div className="container" style={{ textAlign: 'center', padding: '60px 0' }}>
+            <p style={{ color: 'rgba(58,36,26,0.55)', marginBottom: 20 }}>Please sign in to view your cart.</p>
+            <Link href="/auth/login?redirect=/cart" className="btn btn-primary">Sign In</Link>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <div className="page-header">
         <div className="container">
           <h1>Shopping Cart</h1>
-          <p>Review your items before checking out</p>
+          <p>{cart.length} item{cart.length !== 1 ? 's' : ''} in your cart</p>
         </div>
       </div>
 
-      <div className="cart-page">
+      <div className="section">
         <div className="container">
           {cart.length === 0 ? (
             <div className="cart-empty">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 17.5h11l2-13h-15l2 13z"/><circle cx="9" cy="21" r="1"/><circle cx="15" cy="21" r="1"/></svg>
               <h2>Your cart is empty</h2>
-              <p>Looks like you haven&rsquo;t added any honey yet.</p>
+              <p>Looks like you havent added anything yet.</p>
               <Link href="/shop" className="btn btn-primary">Shop Now →</Link>
             </div>
           ) : (
-            <>
-              <table className="cart-table">
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th>Qty</th>
-                    <th>Total</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="cart-grid">
+              <div>
+                <div className="cart-table">
                   {cart.map((item) => {
-                    const product = Object.values(PRODUCTS).find((p) => p.id === item.id);
+                    const product = productMap[item.id];
                     const price = product?.variants[item.variant]?.price ?? 0;
+                    const totalPrice = price * item.qty;
                     return (
-                      <tr key={`${item.id}-${item.variant}`}>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            {product && <img src={product.image} alt={product.name} className="cart-item-img" />}
-                            <div>
-                              <div className="cart-item-name">{product?.name}</div>
-                              <div className="cart-item-variant">{item.variant}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td><span className="cart-item-price">₹{price}</span></td>
-                        <td>
-                          <div className="qty-ctl">
-                            <button onClick={() => handleQty(item.id, item.variant, -1)}>−</button>
-                            <span className="qty-num">{item.qty}</span>
-                            <button onClick={() => handleQty(item.id, item.variant, 1)}>+</button>
-                          </div>
-                        </td>
-                        <td><span className="cart-item-price">₹{price * item.qty}</span></td>
-                        <td><button className="cart-remove" onClick={() => handleRemove(item.id, item.variant)}>✕</button></td>
-                      </tr>
+                      <div key={`${item.id}-${item.variant}`} className="cart-row">
+                        <Link href={`/shop/${product?.slug || item.id}`} className="cart-item-img">
+                          {product?.image ? (
+                            <img src={product.image} alt={product?.name} />
+                          ) : (
+                            <div style={{ width: 56, height: 70, background: '#f5f0e8', borderRadius: 8 }} />
+                          )}
+                        </Link>
+                        <div className="cart-item-info">
+                          <Link href={`/shop/${product?.slug || item.id}`} className="cart-item-name">
+                            {product?.name || item.id}
+                          </Link>
+                          <span className="cart-item-variant">{item.variant}</span>
+                        </div>
+                        <div className="cart-item-price">₹{price}</div>
+                        <div className="qty-ctl">
+                          <button onClick={() => handleQty(item.id, item.variant, -1)} disabled={item.qty <= 1}>–</button>
+                          <span>{item.qty}</span>
+                          <button onClick={() => handleQty(item.id, item.variant, 1)}>+</button>
+                        </div>
+                        <div className="cart-item-total">₹{totalPrice}</div>
+                        <button className="cart-item-remove" onClick={() => handleRemove(item.id, item.variant)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        </button>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
-
-             
-
-              <div className="prev-orders">
-                <h3>Previously Ordered</h3>
-                {(() => {
-                  const seen = new Set<string>();
-                  const items: { id: string; variant: string; name: string; price: number }[] = [];
-                  getAllOrders().slice().reverse().forEach((o) =>
-                    o.items.forEach((i) => {
-                      const key = `${i.id}-${i.variant}`;
-                      if (!seen.has(key)) { seen.add(key); items.push(i); }
-                    })
-                  );
-                  if (items.length === 0) return <p style={{ fontSize: 13, color: 'rgba(58,36,26,0.45)' }}>No previous orders yet.</p>;
-                  return (
-                    <div className="prev-grid">
-                      {items.map((i) => {
-                        const inCart = cart.some((c) => c.id === i.id && c.variant === i.variant);
-                        return (
-                          <div key={`${i.id}-${i.variant}`} className="prev-item">
-                            <div>
-                              <div className="prev-name">{i.name}</div>
-                              <div className="prev-variant">{i.variant} — ₹{i.price}</div>
-                            </div>
-                            <button
-                              className="btn btn-sm"
-                              disabled={inCart}
-                              onClick={() => {
-                                saveCart(addToCart(cart, i.id, i.variant));
-                                refresh();
-                              }}
-                            >{inCart ? 'Added ✓' : 'Re-order'}</button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
+                </div>
+                <button className="btn btn-outline" onClick={() => { saveCart([]); refresh(); }} style={{ marginTop: 16 }}>
+                  Clear Cart
+                </button>
               </div>
 
-              <div className="cart-summary">
-                <div className="coupon-row">
+              <div>
+                <div className="cart-summary">
+                  <h3>Order Summary</h3>
+                  <div className="cs-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
+                  <div className="cs-row cs-total"><span>Total</span><span>₹{total}</span></div>
+                </div>
+
+                <div className="coupon-section" style={{ marginTop: 20 }}>
+                  <h4>Have a coupon?</h4>
+                  <div className="coupon-row">
                     <input
                       type="text"
                       placeholder="Enter coupon code"
                       value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      disabled={!!appliedCoupon}
                     />
-                    <button onClick={applyCoupon}>Apply</button>
-                </div>
-                {couponMsg && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontSize: 13 }}>
-                    <span style={{ color: appliedCoupon ? '#22c55e' : '#ef4444' }}>{couponMsg}</span>
-                    {appliedCoupon && (
-                        <button onClick={removeCoupon} style={{ fontSize: 12, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Remove</button>
+                    {appliedCoupon ? (
+                      <button className="btn btn-outline" onClick={removeCoupon} style={{ padding: '8px 14px', fontSize: 12 }}>Remove</button>
+                    ) : (
+                      <button className="btn btn-primary" onClick={applyCoupon} style={{ padding: '8px 14px', fontSize: 12 }}>Apply</button>
                     )}
                   </div>
-                )}
-                <div className="sr"><span>Subtotal</span><span>₹{subtotal}</span></div>
-                {discount > 0 && <div className="sr" style={{ color: '#22c55e' }}><span>Discount ({appliedCoupon?.code})</span><span>-₹{discount}</span></div>}
-                <div className="sr"><span>Shipping</span><span>{shipping === 0 ? 'FREE' : `₹${shipping}`}</span></div>
-                <div className="sr total"><span>Total</span><span>₹{total}</span></div>
-                <Link href="/checkout" className="btn btn-primary">Proceed to Checkout →</Link>
+                  {couponMsg && <p className="coupon-msg">{couponMsg}</p>}
+                </div>
+
+                <Link href="/checkout" className="btn btn-primary" style={{ width: '100%', marginTop: 20, textAlign: 'center' }}>
+                  Proceed to Checkout →
+                </Link>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

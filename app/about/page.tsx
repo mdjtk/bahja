@@ -1,10 +1,11 @@
-import ImpactSection from '@/components/ImpactSection';
+import type { Metadata } from 'next';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
+import DripSeparator from '@/components/DripSeparator';
 
-export const metadata = {
-  title: 'About Us – Bahja',
-  description: 'Learn about Bahja ethical beekeeping journey from the beehives of Kerala to your doorstep.',
-};
+export const metadata: Metadata = {
+  title: 'About Us',
+  description: 'Bahja brings you pure, raw honey from the forests of Gujarat. Learn about our journey, our bees, and our commitment to quality.',
+}
 
 export default function AboutPage() {
   return (
@@ -12,40 +13,24 @@ export default function AboutPage() {
       <BreadcrumbSchema items={[{ name: 'Home', href: '/' }, { name: 'About', href: '/about' }]} />
       <div className="page-header">
         <div className="container">
-          <h1>About Bahja</h1>
-          <p>Pure honey, ethical roots, real impact</p>
+          <h1>Our Story</h1>
+          <p>From the heart of Gujarat&apos;s forests to your table</p>
         </div>
       </div>
 
-      <div className="about-story">
+      <DripSeparator />
+
+      <section className="section">
         <div className="container">
-          <div>
-            <h2>From the Hive, With Love</h2>
-            <p>
-              Bahja started with a simple belief — that nature&apos;s sweetest gift shouldn&apos;t be tampered with.
-              Our journey began in the forests of Gujarat, where we discovered traditional beekeeping
-              communities practicing methods passed down for generations.
-            </p>
-            <p>
-              We work directly with local beekeepers, ensuring ethical harvesting practices that put the
-              health of the hive first. Every jar of Bahja honey is raw, unfiltered, and never heated
-              beyond its natural temperature. What you taste is exactly what the bees intended.
-            </p>
-            <p>
-              Our name, Bahja, means pure in heart — a promise we extend to our bees, our farmers, and
-              everyone who enjoys our honey.
-            </p>
-          </div>
-          <div style={{ background: '#fdf6ec', borderRadius: 16, padding: 40, textAlign: 'center' }}>
-            <img src="/assets/images/logo.png" alt="Bahja" style={{ height: 80, marginBottom: 16 }} />
-            <p style={{ fontSize: 15, color: 'rgba(58,36,26,0.55)', fontStyle: 'italic' }}>
-              &ldquo;Nature doesn&apos;t need our help to make perfect honey. It just needs us to not get in the way.&rdquo;
-            </p>
+          <div className="content-area">
+            <h2>The Bahja Promise</h2>
+            <p>At Bahja, we believe that honey should be exactly as nature intended — raw, unprocessed, and pure. Our journey began in the forests of Gujarat, where indigenous bee species have thrived for centuries.</p>
+            <p>We work directly with local beekeepers who follow traditional methods passed down through generations. No heat treatment, no fine filtering, no additives. Just pure honey, straight from the hive.</p>
+            <h2>Our Mission</h2>
+            <p>To bring the purest, most nutritious honey to every Indian household while supporting sustainable beekeeping practices and local communities.</p>
           </div>
         </div>
-      </div>
-
-      <ImpactSection />
+      </section>
     </>
   );
 }

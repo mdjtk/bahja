@@ -1,13 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { isAdmin } from '@/lib/auth-helpers';
 
 export async function GET() {
   return NextResponse.json({ authenticated: false }, { status: 401 });
 }
 
-export async function POST(req: Request) {
-  const cookie = req.headers.get('cookie') || '';
-  const hasAdmin = cookie.split(';').some((c) => c.trim().startsWith('bahja_admin='));
-  if (!hasAdmin) {
+export async function POST(req: NextRequest) {
+  if (!isAdmin(req)) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
   return NextResponse.json({ authenticated: true });

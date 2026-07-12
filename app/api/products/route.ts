@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
+import { isAdmin } from '@/lib/auth-helpers'
 
 function mapProduct(p: any) {
   return {
@@ -14,34 +15,34 @@ function mapProduct(p: any) {
     variants: p.variants,
     active: p.active,
     created_at: p.created_at,
-  };
+  }
 }
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from('bahja_products')
-    .select('*')
-    .order('created_at', { ascending: true });
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('bahja_products')
+      .select('*')
+      .order('created_at', { ascending: true })
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) throw error
+    return NextResponse.json(data.map(mapProduct))
+  } catch (err: any) {
+    console.error('Error in GET /api/products:', err);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
-
-  return NextResponse.json((data || []).map(mapProduct));
 }
 
 export async function POST(req: NextRequest) {
-  const cookie = req.headers.get('cookie') || '';
-  const hasAdmin = cookie.split(';').some((c) => c.trim().startsWith('bahja_admin='));
-  if (!hasAdmin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!isAdmin(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const body = await req.json();
-    const { data, error } = await supabase
+    const body = await req.json()
+    const { data, error } = await supabaseAdmin
       .from('bahja_products')
-      .insert({
+      .upsert({
         id: body.id,
         name: body.name,
         type: body.type,
@@ -49,16 +50,18 @@ export async function POST(req: NextRequest) {
         image: body.image,
         rating: body.rating || 5.0,
         description: body.description,
-        variant_order: body.variantOrder,
+        variant_order: body.variantOrder || body.variant_order,
         variants: body.variants,
         active: body.active !== undefined ? body.active : true,
+        created_at: new Date().toISOString(),
       })
       .select()
-      .single();
+      .single()
 
-    if (error) throw error;
-    return NextResponse.json(mapProduct(data), { status: 201 });
+    if (error) throw error
+    return NextResponse.json(mapProduct(data), { status: 201 })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Error in POST /api/products:', err);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }

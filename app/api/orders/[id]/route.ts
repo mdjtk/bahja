@@ -1,26 +1,35 @@
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
+import { verifyAuth } from '@/lib/auth-helpers'
 
 export async function GET(
-  _req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const decoded = await verifyAuth(req)
+  if (!decoded) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+  }
+
   try {
-    const { id } = await params;
-    const { data, error } = await supabase
+    const { id } = await params
+    const { data, error } = await supabaseAdmin
       .from('bahja_orders')
       .select('*')
       .eq('order_id', id)
-      .single();
+      .single()
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
-      }
-      throw error;
+    if (error || !data) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
-    return NextResponse.json(data);
+
+    if (data.user_id !== decoded.uid) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(data)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('Error in GET /api/orders/[id]:', err);
+    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }

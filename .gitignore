@@ -3,3 +3,6 @@ node_modules/
 .env*.local
 vercel-login.txt
 .vercel
+*.tsbuildinfo
+.playwright-mcp/
+screenshots/
