@@ -1,4 +1,4 @@
-﻿*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent!important}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent!important}
 html{scroll-behavior:smooth}
 .skip-link{position:absolute;top:-100px;left:8px;z-index:10000;padding:8px 16px;background:#3A241A;color:#fff;border-radius:0 0 6px 6px;font-size:14px;transition:top .2s}
 .skip-link:focus{top:0;outline:2px solid #eab704}
