@@ -9,15 +9,16 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.razorpay.com https://*.firebase.com https://apis.google.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.razorpay.com https://*.firebase.com https://*.firebaseapp.com https://apis.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://*.supabase.co http://*.supabase.co https://*.googleapis.com https://*.gstatic.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co https://*.firebase.com https://identitytoolkit.googleapis.com https://*.razorpay.com wss://*.firebase.com",
-      "frame-src 'self' https://*.razorpay.com https://*.firebase.com https://apis.google.com",
+      "connect-src 'self' https://*.supabase.co https://*.firebase.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://*.razorpay.com wss://*.firebase.com",
+      "frame-src 'self' https://*.razorpay.com https://*.firebase.com https://*.firebaseapp.com https://apis.google.com",
       "manifest-src 'self'",
     ].join('; '),
   },
+  { key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
 ]
 
