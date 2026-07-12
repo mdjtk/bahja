@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function ImpactSection() {
   return (
     <section className="impact" id="about">
@@ -20,7 +22,7 @@ export default function ImpactSection() {
           </div>
         </div>
         <div className="badges">
-          <a href="/certificate" style={{ color: 'inherit', textDecoration: 'none' }}><span>✦ FSSAI Approved</span></a>
+          <Link href="/certificate" style={{ color: 'inherit', textDecoration: 'none' }}><span>✦ FSSAI Approved</span></Link>
           <span>✦ Lab Tested</span>
           <span>✦ Direct from Hive</span>
           <span>✦ Zero Adulteration</span>

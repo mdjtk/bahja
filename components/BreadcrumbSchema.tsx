@@ -6,7 +6,7 @@ export default function BreadcrumbSchema({ items }: { items: { name: string; hre
       '@type': 'ListItem',
       position: i + 1,
       name: item.name,
-      item: `https://bahja.in${item.href}`,
+      item: `https://bahjahoney.com${item.href}`,
     })),
   };
 

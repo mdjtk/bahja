@@ -1,8 +1,16 @@
+import type { Metadata } from 'next';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'FSSAI Certificate – Bahja',
-  description: 'View Bahja FSSAI certificate for pure honey. Reg No 21326218000285.',
+  description: 'View Bahja FSSAI certificate for pure honey. FSSAI Reg No 21326218000285, inspected by Malappuram, Kerala.',
+  alternates: {
+    canonical: 'https://bahjahoney.com/certificate',
+  },
+  openGraph: {
+    title: 'FSSAI Certificate | Bahja Pure Honey',
+    description: 'View Bahja FSSAI certificate for pure honey. FSSAI Reg No 21326218000285.',
+  },
 };
 
 export default function CertificatePage() {

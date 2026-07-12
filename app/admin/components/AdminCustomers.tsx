@@ -54,7 +54,7 @@ export default function AdminCustomers({ users, orders }: AdminCustomersProps) {
           <div className="admin-content" style={{ margin: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
               {selectedUser.photoURL ? (
-                <img src={selectedUser.photoURL} alt="" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
+                <img src={selectedUser.photoURL} alt={selectedUser.displayName || 'Customer avatar'} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
               ) : (
                 <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#eab70420', color: '#eab704', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>
                   {selectedUser.displayName?.charAt(0) || selectedUser.email?.charAt(0) || '?'}
@@ -121,7 +121,7 @@ export default function AdminCustomers({ users, orders }: AdminCustomersProps) {
                 <tr key={u.uid} style={{ cursor: 'pointer' }} onClick={() => setSelectedUid(u.uid)}>
                   <td style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {u.photoURL ? (
-                      <img src={u.photoURL} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+                      <img src={u.photoURL} alt={u.displayName || 'User avatar'} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
                     ) : (
                       <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#eab70420', color: '#eab704', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
                         {u.displayName?.charAt(0) || u.email?.charAt(0) || '?'}

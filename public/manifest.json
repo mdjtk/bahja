@@ -1,0 +1,16 @@
+{
+  "name": "Bahja Pure Honey",
+  "short_name": "Bahja",
+  "description": "Buy pure, raw honey online in India. Premium Wild Honey, Stingless Bee Honey & more. Direct from Kerala beehives.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#C5700A",
+  "icons": [
+    {
+      "src": "/assets/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

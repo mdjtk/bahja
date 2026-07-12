@@ -203,7 +203,10 @@ export default function CartPage() {
             <div className="cart-empty">
               <h2>Your cart is empty</h2>
               <p>Looks like you havent added anything yet.</p>
-              <Link href="/shop" className="btn btn-primary">Shop Now →</Link>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link href="/shop" className="btn btn-primary">Shop Now →</Link>
+                <Link href="/my-orders" className="btn btn-outline">Previous Orders →</Link>
+              </div>
             </div>
           ) : (
             <div className="cart-grid">
@@ -242,9 +245,14 @@ export default function CartPage() {
                     );
                   })}
                 </div>
-                <button className="btn btn-outline" onClick={() => { saveCart([]); refresh(); }} style={{ marginTop: 16 }}>
-                  Clear Cart
-                </button>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 16 }}>
+                  <button className="btn btn-outline" onClick={() => { saveCart([]); refresh(); }}>
+                    Clear Cart
+                  </button>
+                  <Link href="/my-orders" className="btn btn-outline" style={{ fontSize: 13 }}>
+                    Previous Orders →
+                  </Link>
+                </div>
               </div>
 
               <div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from '@/components/Toast'
 
@@ -94,7 +95,7 @@ export default function AdminLoginPage() {
           </form>
 
           <div className="admin-login-footer">
-            <a href="/">← Back to site</a>
+            <Link href="/">← Back to site</Link>
           </div>
         </div>
       </div>

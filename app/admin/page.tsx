@@ -486,7 +486,7 @@ export default function AdminPage() {
                 <tr key={u.uid}>
                   <td style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {u.photoURL ? (
-                      <img src={u.photoURL} alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
+                      <img src={u.photoURL} alt={u.displayName || 'User'} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
                     ) : (
                       <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#eab70420', color: '#eab704', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
                         {u.displayName?.charAt(0) || u.email?.charAt(0) || '?'}

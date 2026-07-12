@@ -206,7 +206,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
 
       {showSticky && (
         <div className="pd-sticky-bar">
-          <img src={product.image} alt="" className="pd-sticky-img" />
+          <img src={product.image} alt={product.name} className="pd-sticky-img" />
           <div className="pd-sticky-info">
             <div className="pd-sticky-name">{product.name}</div>
             <div className="pd-sticky-price">₹{price * qty}</div>

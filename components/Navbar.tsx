@@ -70,7 +70,7 @@ export default function Navbar({ cart }: { cart: CartItem[] }) {
         <div className="container">
           <div className="nav-left">
             <Link href="/" className="logo" onClick={close}>
-              <img src="/assets/images/logo.png" alt="" height={32} />
+              <img src="/assets/images/logo.png" alt="Bahja" height={32} />
               <span>Bahja<span className="logo-dot"></span></span>
             </Link>
             <ul className="nav-links" style={menuOpen ? {

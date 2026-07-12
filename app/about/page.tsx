@@ -5,6 +5,13 @@ import DripSeparator from '@/components/DripSeparator';
 export const metadata: Metadata = {
   title: 'About Us',
   description: 'Bahja brings you pure, raw honey from the forests of Gujarat. Learn about our journey, our bees, and our commitment to quality.',
+  alternates: {
+    canonical: 'https://bahjahoney.com/about',
+  },
+  openGraph: {
+    title: 'About Us | Bahja Pure Honey',
+    description: 'Bahja brings you pure, raw honey from the forests of Gujarat. Learn about our journey, our bees, and our commitment to quality.',
+  },
 }
 
 export default function AboutPage() {

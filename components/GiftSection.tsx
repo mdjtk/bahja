@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function GiftSection() {
   return (
     <section className="gift" id="gift">
@@ -8,7 +10,7 @@ export default function GiftSection() {
             Send the purest, healthiest gift and show how much you care. Beautifully packaged honey
             sets for every occasion.
           </p>
-          <a href="/shop" className="btn btn-primary">Shop Gift Sets →</a>
+          <Link href="/shop" className="btn btn-primary">Shop Gift Sets →</Link>
         </div>
         <div className="showcase">
           <div className="podium-img">

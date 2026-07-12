@@ -10,7 +10,7 @@ export default function ProductSchema({ product }: { product: Product }) {
     '@type': 'Product',
     name: product.name,
     description: product.description,
-    image: `https://bahja.in${product.image}`,
+    image: `https://bahjahoney.com${product.image}`,
     brand: { '@type': 'Brand', name: 'Bahja' },
     offers: {
       '@type': 'AggregateOffer',
@@ -19,12 +19,14 @@ export default function ProductSchema({ product }: { product: Product }) {
       highPrice: maxPrice,
       availability: 'https://schema.org/InStock',
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: product.rating,
-      bestRating: 5,
-      ratingCount: 128,
-    },
+    ...(product.rating ? {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: product.rating,
+        bestRating: 5,
+        ratingCount: 128,
+      },
+    } : {}),
   };
 
   return (

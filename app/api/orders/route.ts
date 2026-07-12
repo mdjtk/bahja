@@ -54,8 +54,13 @@ export async function POST(req: NextRequest) {
       computedTotal += variant.price * item.qty
     }
 
-    if (Math.abs(computedTotal - body.total) > 1) {
-      console.error(`Price mismatch: client=${body.total}, server=${computedTotal}, user=${userId}`)
+    const SHIPPING_THRESHOLD = 400
+    const SHIPPING_FEE = 49
+    const serverShipping = computedTotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
+    const serverTotal = computedTotal + serverShipping
+
+    if (Math.abs(serverTotal - body.total) > 1) {
+      console.error(`Price mismatch: client=${body.total}, server=${serverTotal} (subtotal=${computedTotal}, shipping=${serverShipping}), user=${userId}`)
       return NextResponse.json({ error: 'Order total mismatch' }, { status: 400 })
     }
 
@@ -68,8 +73,8 @@ export async function POST(req: NextRequest) {
           const razorpay = new Razorpay({ key_id, key_secret })
           const payment = await razorpay.payments.fetch(body.razorpay_payment_id)
           const paidAmount = Number(payment.amount ?? 0) / 100
-          if (Math.abs(paidAmount - computedTotal) > 1) {
-            console.error(`Payment amount mismatch: paid=${paidAmount}, total=${computedTotal}, razorpay_payment_id=${body.razorpay_payment_id}`)
+          if (Math.abs(paidAmount - serverTotal) > 1) {
+            console.error(`Payment amount mismatch: paid=${paidAmount}, total=${serverTotal}, razorpay_payment_id=${body.razorpay_payment_id}`)
             return NextResponse.json({ error: 'Payment amount mismatch' }, { status: 400 })
           }
         } catch (err) {
@@ -130,7 +135,7 @@ export async function POST(req: NextRequest) {
         state: sanitize(body.state) || null,
         pincode: sanitize(body.pincode) || null,
         payment_method: body.payment_method,
-        total: computedTotal,
+        total: serverTotal,
         razorpay_payment_id: body.razorpay_payment_id || null,
         status: 'Confirmed',
         user_id: userId,

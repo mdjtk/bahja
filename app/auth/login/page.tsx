@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
@@ -210,17 +211,17 @@ function LoginForm() {
 
               <p className="login-terms">
                 By continuing, you agree to our{' '}
-                <a href="/terms">Terms of Service</a> and{' '}
-                <a href="/privacy">Privacy Policy</a>
+                <Link href="/terms">Terms of Service</Link> and{' '}
+                <Link href="/privacy">Privacy Policy</Link>
               </p>
             </>
           )}
         </div>
 
-        <a href="/" className="login-back">
+        <Link href="/" className="login-back">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           Back to shopping
-        </a>
+        </Link>
       </div>
     </div>
   )

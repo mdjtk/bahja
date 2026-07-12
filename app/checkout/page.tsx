@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, FormEvent } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { loadCart, saveCart, placeOrderDb, CartItem, getPhoneLocal } from '@/lib/store'
 import { useAuth } from '@/components/AuthProvider'
@@ -65,8 +66,8 @@ export default function CheckoutPage() {
     setLoaded(true)
 
     if (user.displayName) setName(user.displayName)
-    if (user.phoneNumber) setPhone(user.phoneNumber)
-    else { const local = getPhoneLocal(); if (local) setPhone(local) }
+    if (user.phoneNumber) setPhone(user.phoneNumber.replace(/^\+91/, ''))
+    else { const local = getPhoneLocal(); if (local) setPhone(local.replace(/^\+91/, '')) }
     if (user.email && !email) setEmail(user.email)
 
     const stored = localStorage.getItem('bahja_addresses')
@@ -230,7 +231,7 @@ export default function CheckoutPage() {
       <div className="page-header">
         <div className="container">
           <h1>Checkout</h1>
-          <p style={{ color: 'rgba(58,36,26,0.45)' }}>Your cart is empty. <a href="/shop" style={{ color: '#eab704' }}>Shop now →</a></p>
+          <p style={{ color: 'rgba(58,36,26,0.45)' }}>Your cart is empty. <Link href="/shop" style={{ color: '#eab704' }}>Shop now →</Link></p>
         </div>
       </div>
     )
