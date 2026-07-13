@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import FaqSchema from '@/components/FaqSchema';
-import FaqContent, { faqData } from './faq-content';
+import { faqs } from '@/lib/faq-data';
+import FaqContent from './faq-content';
 
 export const metadata: Metadata = {
   title: 'Frequently Asked Questions',
@@ -19,7 +20,7 @@ export default function FAQPage() {
   return (
     <>
       <BreadcrumbSchema items={[{ name: 'Home', href: '/' }, { name: 'FAQ', href: '/faq' }]} />
-      <FaqSchema faqs={faqData} />
+      <FaqSchema faqs={faqs} />
       <div className="page-header">
         <div className="container">
           <h1>Frequently Asked Questions</h1>
