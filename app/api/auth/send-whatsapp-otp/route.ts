@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { sendOtpViaWhatsApp } from '@/lib/whatsapp'
 import { checkRateLimit } from '@/lib/rate-limit'
 
@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
     const fullPhone = '+91' + cleaned
     const otp = String(Math.floor(100000 + Math.random() * 900000))
 
-    await supabaseAdmin
+    await getSupabaseAdmin()
       .from('bahja_otps')
       .delete()
       .eq('phone', cleaned)
       .lt('expires_at', new Date().toISOString())
 
-    const { error: insertError } = await supabaseAdmin
+    const { error: insertError } = await getSupabaseAdmin()
       .from('bahja_otps')
       .insert({
         phone: cleaned,

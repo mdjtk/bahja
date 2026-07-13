@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminAuth } from '@/lib/firebase-admin'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const decoded = await getAdminAuth().verifyIdToken(token)
     const uid = decoded.uid
 
-    const { data } = await supabaseAdmin
+    const { data } = await getSupabaseAdmin()
       .from('bahja_user_profiles')
       .select('phone')
       .eq('uid', uid)

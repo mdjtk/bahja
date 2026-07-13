@@ -1,11 +1,11 @@
 import { NextResponse, NextRequest } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 const DEFAULT_THRESHOLD = 400
 
 export async function GET() {
   try {
-    const { data } = await supabaseAdmin
+    const { data } = await getSupabaseAdmin()
       .from('bahja_settings')
       .select('value')
       .eq('key', 'shipping_threshold')
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     if (!threshold || threshold < 0) {
       return NextResponse.json({ error: 'Invalid threshold' }, { status: 400 })
     }
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabaseAdmin()
       .from('bahja_settings')
       .upsert({ key: 'shipping_threshold', value: String(threshold), updated_at: new Date().toISOString() }, { onConflict: 'key' })
     if (error) throw error

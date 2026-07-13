@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { verifyAuth } from '@/lib/auth-helpers'
 
 export async function POST(req: Request) {
@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { data: orders, error: fetchError } = await supabaseAdmin
+    const { data: orders, error: fetchError } = await getSupabaseAdmin()
       .from('bahja_orders')
       .select('order_id')
       .is('user_id', null)
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     }
 
     const ids = orders.map((o) => o.order_id)
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await getSupabaseAdmin()
       .from('bahja_orders')
       .update({ user_id: user.uid })
       .in('order_id', ids)

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { signAdminSession } from '@/lib/admin-auth';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     let storedPassword = process.env.ADMIN_PASSWORD;
     if (!storedPassword) {
       try {
-        const { data } = await supabaseAdmin
+        const { data } = await getSupabaseAdmin()
           .from('bahja_settings')
           .select('value')
           .eq('key', 'admin_password')
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       if (match) {
         try {
           const hash = await bcrypt.hash(password, 10)
-          await supabaseAdmin
+          await getSupabaseAdmin()
             .from('bahja_settings')
             .update({ value: hash, updated_at: new Date().toISOString() })
             .eq('key', 'admin_password')

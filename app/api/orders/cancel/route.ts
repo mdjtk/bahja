@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { verifyAuth } from '@/lib/auth-helpers'
 
 export async function POST(req: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing order_id' }, { status: 400 })
     }
 
-    const { data: order, error: fetchError } = await supabaseAdmin
+    const { data: order, error: fetchError } = await getSupabaseAdmin()
       .from('bahja_orders')
       .select('*')
       .eq('order_id', order_id)
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order cannot be cancelled' }, { status: 400 })
     }
 
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await getSupabaseAdmin()
       .from('bahja_orders')
       .update({ status: 'Cancelled' })
       .eq('order_id', order_id)

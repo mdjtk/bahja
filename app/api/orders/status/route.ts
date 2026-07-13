@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { isAdmin } from '@/lib/auth-helpers'
 
 export async function PATCH(req: NextRequest) {
@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('bahja_orders')
       .update({ status })
       .eq('order_id', order_id)

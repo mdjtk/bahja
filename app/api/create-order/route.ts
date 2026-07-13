@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { verifyAuth } from '@/lib/auth-helpers';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   const decoded = await verifyAuth(req);
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     // Server-side amount reconstruction
     let computedTotal = 0;
     for (const item of items) {
-      const { data: product } = await supabaseAdmin
+      const { data: product } = await getSupabaseAdmin()
         .from('bahja_products')
         .select('variants')
         .eq('id', item.id)

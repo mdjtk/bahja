@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { isAdmin } from '@/lib/auth-helpers'
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.expires_at !== undefined) update.expires_at = body.expires_at || null
     if (body.active !== undefined) update.active = body.active
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('bahja_coupons')
       .update(update)
       .eq('id', id)
@@ -41,7 +41,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
   try {
     const { id } = await params
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('bahja_coupons')
       .update({ active: false })
       .eq('id', id)

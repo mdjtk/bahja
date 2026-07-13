@@ -1,6 +1,6 @@
 // Server-side product helpers — always reads from Supabase (single source of truth).
 
-import { supabaseAdmin } from './supabase'
+import { getSupabaseAdmin } from './supabase'
 import type { Product } from './data'
 
 function mapProduct(p: any): Product {
@@ -19,7 +19,7 @@ function mapProduct(p: any): Product {
 }
 
 export async function getProducts(): Promise<Product[]> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('bahja_products')
     .select('*')
     .order('created_at', { ascending: true })
@@ -33,7 +33,7 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('bahja_products')
     .select('*')
     .eq('slug', slug)
@@ -44,7 +44,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('bahja_products')
     .select('*')
     .eq('id', id)

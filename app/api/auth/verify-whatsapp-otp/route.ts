@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { getAdminAuth } from '@/lib/firebase-admin'
 import { checkRateLimit } from '@/lib/rate-limit'
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find valid OTP
-    const { data: otpRecord, error: findError } = await supabaseAdmin
+    const { data: otpRecord, error: findError } = await getSupabaseAdmin()
       .from('bahja_otps')
       .select('*')
       .eq('phone', cleaned)
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Delete the used OTP
-    await supabaseAdmin.from('bahja_otps').delete().eq('id', otpRecord.id)
+    await getSupabaseAdmin().from('bahja_otps').delete().eq('id', otpRecord.id)
 
     // Get or create Firebase user by phone
     const fullPhone = '+91' + cleaned

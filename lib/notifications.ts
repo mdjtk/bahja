@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { sendOrderAlertViaWhatsApp } from '@/lib/whatsapp'
 
 function getTeamPhones(): string[] {
@@ -55,7 +55,7 @@ async function logNotification(
   error?: string,
 ): Promise<void> {
   try {
-    await supabaseAdmin.from('bahja_notification_log').insert({
+    await getSupabaseAdmin().from('bahja_notification_log').insert({
       order_id: orderId,
       channel,
       status,

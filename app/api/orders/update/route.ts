@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { isAdmin } from '@/lib/auth-helpers'
 
 export async function PATCH(req: NextRequest) {
@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest) {
     if (tracking_number !== undefined) update.tracking_number = tracking_number
     if (admin_notes !== undefined) update.admin_notes = admin_notes
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabaseAdmin()
       .from('bahja_orders')
       .update(update)
       .eq('order_id', order_id)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { verifyAuth } from '@/lib/auth-helpers'
 
 export async function GET(req: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { data } = await supabaseAdmin
+    const { data } = await getSupabaseAdmin()
       .from('bahja_user_profiles')
       .select('address, city, state, pincode')
       .eq('uid', user.uid)
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { address, city, state, pincode } = await req.json()
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabaseAdmin()
       .from('bahja_user_profiles')
       .upsert({
         uid: user.uid,
