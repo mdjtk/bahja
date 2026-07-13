@@ -20,6 +20,9 @@ function mapProduct(p: any) {
 
 export async function GET() {
   try {
+    if (!process.env.SUPABASE_URL) throw new Error('SUPABASE_URL missing')
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY missing')
+
     const { data, error } = await supabaseAdmin
       .from('bahja_products')
       .select('*')
@@ -28,8 +31,8 @@ export async function GET() {
     if (error) throw error
     return NextResponse.json(data.map(mapProduct))
   } catch (err: any) {
-    console.error('Error in GET /api/products:', err);
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+    console.error('Error in GET /api/products:', err?.message || err);
+    return NextResponse.json({ error: err?.message || 'Something went wrong' }, { status: 500 })
   }
 }
 
