@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminAuth } from '@/lib/firebase-admin'
+import { getAdminAuth } from '@/lib/firebase-admin'
 import { isAdmin } from '@/lib/auth-helpers'
 
 export async function GET(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     let pageToken: string | undefined
 
     do {
-      const result = await adminAuth.listUsers(1000, pageToken)
+      const result = await getAdminAuth().listUsers(1000, pageToken)
       allUsers.push(...result.users.map((u) => ({
         uid: u.uid,
         email: u.email,

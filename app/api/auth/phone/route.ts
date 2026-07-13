@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminAuth } from '@/lib/firebase-admin'
+import { getAdminAuth } from '@/lib/firebase-admin'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     }
 
     const token = authHeader.slice(7)
-    const decoded = await adminAuth.verifyIdToken(token)
+    const decoded = await getAdminAuth().verifyIdToken(token)
     const uid = decoded.uid
 
     const { data } = await supabaseAdmin

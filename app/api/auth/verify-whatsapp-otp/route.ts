@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { adminAuth } from '@/lib/firebase-admin'
+import { getAdminAuth } from '@/lib/firebase-admin'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
@@ -39,17 +39,17 @@ export async function POST(req: NextRequest) {
     let firebaseUid: string
 
     try {
-      const fbUser = await adminAuth.getUserByPhoneNumber(fullPhone)
+      const fbUser = await getAdminAuth().getUserByPhoneNumber(fullPhone)
       firebaseUid = fbUser.uid
     } catch {
-      const fbUser = await adminAuth.createUser({
+      const fbUser = await getAdminAuth().createUser({
         phoneNumber: fullPhone,
       })
       firebaseUid = fbUser.uid
     }
 
     // Generate Firebase custom token
-    const customToken = await adminAuth.createCustomToken(firebaseUid)
+    const customToken = await getAdminAuth().createCustomToken(firebaseUid)
 
     return NextResponse.json({ token: customToken })
   } catch (err: any) {

@@ -1,21 +1,27 @@
 import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 
-function getServiceAccount() {
+let cachedApp: ReturnType<typeof initializeApp> | null = null
+
+function getAdminApp() {
+  if (cachedApp) return cachedApp
+  if (getApps().length) {
+    cachedApp = getApp()
+    return cachedApp
+  }
   const json = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
   if (!json) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY env not set')
   }
-  return JSON.parse(json)
+  cachedApp = initializeApp({
+    credential: cert(JSON.parse(json)),
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  })
+  return cachedApp
 }
 
-const app = getApps().length
-  ? getApp()
-  : initializeApp({
-      credential: cert(getServiceAccount()),
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    })
+function getAdminAuth() {
+  return getAuth(getAdminApp())
+}
 
-const adminAuth = getAuth(app)
-
-export { app as adminApp, adminAuth }
+export { getAdminApp, getAdminAuth }

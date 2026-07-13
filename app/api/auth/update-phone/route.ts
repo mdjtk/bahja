@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminAuth } from '@/lib/firebase-admin'
+import { getAdminAuth } from '@/lib/firebase-admin'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     }
 
     const token = authHeader.slice(7)
-    const decoded = await adminAuth.verifyIdToken(token)
+    const decoded = await getAdminAuth().verifyIdToken(token)
     const { phone } = await req.json()
 
     const cleaned = phone?.replace(/\s+/g, '')
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const fullPhone = `+91${cleaned}`
-    await adminAuth.updateUser(decoded.uid, { phoneNumber: fullPhone })
+    await getAdminAuth().updateUser(decoded.uid, { phoneNumber: fullPhone })
 
     const { error: upsertError } = await supabaseAdmin
       .from('bahja_user_profiles')

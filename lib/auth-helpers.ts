@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server'
-import { adminAuth } from './firebase-admin'
+import { getAdminAuth } from './firebase-admin'
 import { verifyAdminSession } from './admin-auth'
 
 export async function verifyAuth(req: Request) {
@@ -10,7 +10,7 @@ export async function verifyAuth(req: Request) {
   }
   try {
     const token = authHeader.slice(7)
-    const decoded = await adminAuth.verifyIdToken(token)
+    const decoded = await getAdminAuth().verifyIdToken(token)
     return decoded
   } catch (err) {
     console.error('[verifyAuth] Token verification failed:', err)
