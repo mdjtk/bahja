@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find valid OTP
-    const { data: otpRecord, error: findError } = await getSupabaseAdmin()
+    const { data: otpRecord, error: findError } = await (await getSupabaseAdmin())
       .from('bahja_otps')
       .select('*')
       .eq('phone', cleaned)
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Delete the used OTP
-    await getSupabaseAdmin().from('bahja_otps').delete().eq('id', otpRecord.id)
+    await (await getSupabaseAdmin()).from('bahja_otps').delete().eq('id', otpRecord.id)
 
     // Get or create Firebase user by phone
     const fullPhone = '+91' + cleaned

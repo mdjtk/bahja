@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminAuth } from '@/lib/firebase-admin'
-import { isAdmin } from '@/lib/auth-helpers'
+import { isAdmin } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) {

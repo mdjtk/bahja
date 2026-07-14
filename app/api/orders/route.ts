@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Razorpay from 'razorpay'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { verifyAuth, isAdmin } from '@/lib/auth-helpers'
+import { isAdmin } from '@/lib/admin-auth'
+import { verifyAuth } from '@/lib/auth-helpers'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { sendNewOrderNotification } from '@/lib/notifications'
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     const productCache = new Map<string, any>()
     for (const item of body.items) {
       const cached = productCache.get(item.id)
-      const product = cached ?? await getSupabaseAdmin()
+      const product = cached ?? await (await getSupabaseAdmin())
         .from('bahja_products')
         .select('name, variants')
         .eq('id', item.id)
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
     // Stock deduction — skip items without inventory records (unlimited stock)
     const deductions: string[] = []
     for (const item of body.items) {
-      const { data: invRecord, error: invErr } = await getSupabaseAdmin()
+      const { data: invRecord, error: invErr } = await (await getSupabaseAdmin())
         .from('bahja_inventory')
         .select('stock')
         .eq('product_id', item.id)
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
         if (invRecord.stock < item.qty) {
           return NextResponse.json({ error: `Insufficient stock for ${item.id} (${item.variant})` }, { status: 409 })
         }
-        const { error: deductErr } = await getSupabaseAdmin().rpc('decrement_inventory', {
+        const { error: deductErr } = await (await getSupabaseAdmin()).rpc('decrement_inventory', {
           p_product_id: item.id,
           p_variant_key: item.variant,
           p_qty: item.qty,
@@ -110,7 +111,7 @@ export async function POST(req: NextRequest) {
           for (const r of deductions) {
             const [rid, rvar, rqty] = r.split('|')
             try {
-              await getSupabaseAdmin().rpc('decrement_inventory', {
+              await (await getSupabaseAdmin()).rpc('decrement_inventory', {
                 p_product_id: rid, p_variant_key: rvar, p_qty: -Number(rqty),
               })
             } catch {} /* best-effort rollback */
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
       // No inventory record = product not tracked = unlimited stock
     }
 
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .insert({
         order_id: body.order_id,
@@ -168,7 +169,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .select('*')
       .order('created_at', { ascending: false })

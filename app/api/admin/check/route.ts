@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdmin } from '@/lib/auth-helpers';
+import { isAdmin } from '@/lib/admin-auth';
 
 export async function GET() {
   return NextResponse.json({ authenticated: false }, { status: 401 });

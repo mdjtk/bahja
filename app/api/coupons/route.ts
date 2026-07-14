@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { isAdmin } from '@/lib/auth-helpers'
+import { isAdmin } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
   if (!isAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const { data, error } = await getSupabaseAdmin()
+  const { data, error } = await (await getSupabaseAdmin())
     .from('bahja_coupons')
     .select('*')
     .order('created_at', { ascending: false })
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     if (!code || !value) {
       return NextResponse.json({ error: 'code and value are required' }, { status: 400 })
     }
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_coupons')
       .insert({ code: code.toUpperCase(), type, value, min_cart: min_cart || 0, max_uses: max_uses || 0, expires_at: expires_at || null })
       .select()

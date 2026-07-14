@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { isAdmin } from '@/lib/auth-helpers'
+import { isAdmin } from '@/lib/admin-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
-    const { data: existing } = await getSupabaseAdmin()
+    const { data: existing } = await (await getSupabaseAdmin())
       .from('bahja_subscribers')
       .select('email')
       .eq('email', email)
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Already subscribed' }, { status: 200 })
     }
 
-    const { error } = await getSupabaseAdmin()
+    const { error } = await (await getSupabaseAdmin())
       .from('bahja_subscribers')
       .insert({ email, created_at: new Date().toISOString() })
 
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_subscribers')
       .select('*')
       .order('created_at', { ascending: false })

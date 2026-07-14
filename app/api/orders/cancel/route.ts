@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing order_id' }, { status: 400 })
     }
 
-    const { data: order, error: fetchError } = await getSupabaseAdmin()
+    const { data: order, error: fetchError } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .select('*')
       .eq('order_id', order_id)
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order cannot be cancelled' }, { status: 400 })
     }
 
-    const { error: updateError } = await getSupabaseAdmin()
+    const { error: updateError } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .update({ status: 'Cancelled' })
       .eq('order_id', order_id)

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { isAdmin } from '@/lib/auth-helpers'
+import { isAdmin } from '@/lib/admin-auth'
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   store_name: 'Bahja',
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (!isAdmin(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  const { data, error } = await getSupabaseAdmin()
+  const { data, error } = await (await getSupabaseAdmin())
     .from('bahja_settings')
     .select('*')
   if (error) { console.error('Error fetching settings:', error); return NextResponse.json({ error: 'Something went wrong' }, { status: 500 }) }
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     const entries = Object.entries(body).filter(([k]) => k in DEFAULT_SETTINGS)
 
     for (const [key, value] of entries) {
-      await getSupabaseAdmin()
+      await (await getSupabaseAdmin())
         .from('bahja_settings')
         .upsert({ key, value: String(value) }, { onConflict: 'key' })
     }

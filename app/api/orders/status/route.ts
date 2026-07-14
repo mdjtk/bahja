@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { isAdmin } from '@/lib/auth-helpers'
+import { isAdmin } from '@/lib/admin-auth'
 
 export async function PATCH(req: NextRequest) {
   if (!isAdmin(req)) {
@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .update({ status })
       .eq('order_id', order_id)

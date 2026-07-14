@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_cart')
       .select('*')
       .eq('user_id', user.uid)
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   try {
     const { product_id, variant, qty } = await req.json()
 
-    const { data: existing } = await getSupabaseAdmin()
+    const { data: existing } = await (await getSupabaseAdmin())
       .from('bahja_cart')
       .select('*')
       .eq('user_id', user.uid)
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (existing) {
-      const { data, error } = await getSupabaseAdmin()
+      const { data, error } = await (await getSupabaseAdmin())
         .from('bahja_cart')
         .update({ qty })
         .eq('id', existing.id)
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ id: data.product_id, variant: data.variant, qty: data.qty })
     }
 
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_cart')
       .insert({
         user_id: user.uid,
@@ -83,7 +83,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const { product_id, variant } = await req.json()
 
-    const { error } = await getSupabaseAdmin()
+    const { error } = await (await getSupabaseAdmin())
       .from('bahja_cart')
       .delete()
       .eq('user_id', user.uid)

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     for (const item of items) {
       // Validate product and variant exist
-      const { data: product } = await getSupabaseAdmin()
+      const { data: product } = await (await getSupabaseAdmin())
         .from('bahja_products')
         .select('variants')
         .eq('id', item.id)
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       const variantData = product.variants?.[item.variant]
       if (!variantData) continue
 
-      const { data: existing } = await getSupabaseAdmin()
+      const { data: existing } = await (await getSupabaseAdmin())
         .from('bahja_cart')
         .select('*')
         .eq('user_id', user.uid)
@@ -35,12 +35,12 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (existing) {
-        await getSupabaseAdmin()
+        await (await getSupabaseAdmin())
           .from('bahja_cart')
           .update({ qty: item.qty })
           .eq('id', existing.id)
       } else {
-        await getSupabaseAdmin()
+        await (await getSupabaseAdmin())
           .from('bahja_cart')
           .insert({
             user_id: user.uid,

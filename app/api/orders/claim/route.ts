@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { data: orders, error: fetchError } = await getSupabaseAdmin()
+    const { data: orders, error: fetchError } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .select('order_id')
       .is('user_id', null)
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     }
 
     const ids = orders.map((o) => o.order_id)
-    const { error: updateError } = await getSupabaseAdmin()
+    const { error: updateError } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .update({ user_id: user.uid })
       .in('order_id', ids)

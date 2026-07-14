@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     // Server-side amount reconstruction
     let computedTotal = 0;
     for (const item of items) {
-      const { data: product } = await getSupabaseAdmin()
+      const { data: product } = await (await getSupabaseAdmin())
         .from('bahja_products')
         .select('variants')
         .eq('id', item.id)

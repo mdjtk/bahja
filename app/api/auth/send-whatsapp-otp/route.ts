@@ -19,13 +19,13 @@ export async function POST(req: NextRequest) {
     const fullPhone = '+91' + cleaned
     const otp = String(Math.floor(100000 + Math.random() * 900000))
 
-    await getSupabaseAdmin()
+    await (await getSupabaseAdmin())
       .from('bahja_otps')
       .delete()
       .eq('phone', cleaned)
       .lt('expires_at', new Date().toISOString())
 
-    const { error: insertError } = await getSupabaseAdmin()
+    const { error: insertError } = await (await getSupabaseAdmin())
       .from('bahja_otps')
       .insert({
         phone: cleaned,

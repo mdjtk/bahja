@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { data } = await getSupabaseAdmin()
+    const { data } = await (await getSupabaseAdmin())
       .from('bahja_user_profiles')
       .select('address, city, state, pincode')
       .eq('uid', user.uid)
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { address, city, state, pincode } = await req.json()
-    const { error } = await getSupabaseAdmin()
+    const { error } = await (await getSupabaseAdmin())
       .from('bahja_user_profiles')
       .upsert({
         uid: user.uid,

@@ -13,7 +13,7 @@ export async function GET(
 
   try {
     const { id } = await params
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .select('*')
       .eq('order_id', id)

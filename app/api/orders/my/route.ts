@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const { data, error } = await getSupabaseAdmin()
+    const { data, error } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .select('*')
       .eq('user_id', user.uid)

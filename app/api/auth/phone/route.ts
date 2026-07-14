@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const decoded = await getAdminAuth().verifyIdToken(token)
     const uid = decoded.uid
 
-    const { data } = await getSupabaseAdmin()
+    const { data } = await (await getSupabaseAdmin())
       .from('bahja_user_profiles')
       .select('phone')
       .eq('uid', uid)

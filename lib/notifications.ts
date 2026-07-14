@@ -55,7 +55,7 @@ async function logNotification(
   error?: string,
 ): Promise<void> {
   try {
-    await getSupabaseAdmin().from('bahja_notification_log').insert({
+    await (await getSupabaseAdmin()).from('bahja_notification_log').insert({
       order_id: orderId,
       channel,
       status,

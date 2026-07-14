@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     let storedPassword = process.env.ADMIN_PASSWORD;
     if (!storedPassword) {
       try {
-        const { data } = await getSupabaseAdmin()
+        const { data } = await (await getSupabaseAdmin())
           .from('bahja_settings')
           .select('value')
           .eq('key', 'admin_password')
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       if (match) {
         try {
           const hash = await bcrypt.hash(password, 10)
-          await getSupabaseAdmin()
+          await (await getSupabaseAdmin())
             .from('bahja_settings')
             .update({ value: hash, updated_at: new Date().toISOString() })
             .eq('key', 'admin_password')
