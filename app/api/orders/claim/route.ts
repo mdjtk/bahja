@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ claimed: 0 })
     }
 
-    const ids = orders.map((o) => o.order_id)
+    const ids = orders.map((o: any) => o.order_id)
     const { error: updateError } = await (await getSupabaseAdmin())
       .from('bahja_orders')
       .update({ user_id: user.uid })

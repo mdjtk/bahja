@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         .select('name, variants')
         .eq('id', item.id)
         .single()
-        .then(r => r.data)
+        .then((r: any) => r.data)
       if (!cached && product) productCache.set(item.id, product)
 
       if (!product) {

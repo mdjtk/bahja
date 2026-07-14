@@ -1,57 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { isAdmin } from '@/lib/admin-auth'
-
-function mapProduct(p: any) {
-  return {
-    id: p.id,
-    name: p.name,
-    type: p.type,
-    slug: p.slug,
-    image: p.image,
-    rating: p.rating,
-    description: p.description,
-    variantOrder: p.variant_order,
-    variants: p.variants,
-    active: p.active,
-    created_at: p.created_at,
-  }
-}
 
 export async function GET() {
   try {
     const sb = await getSupabaseAdmin()
     const { data, error } = await sb.from('bahja_products').select('*').order('created_at', { ascending: true })
     if (error) throw error
-    return NextResponse.json(data.map(mapProduct))
+    return NextResponse.json(data || [])
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || 'Something went wrong' }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
-  if (!isAdmin(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  try {
-    const body = await req.json()
-    const sb = await getSupabaseAdmin()
-    const { data, error } = await sb.from('bahja_products').upsert({
-      id: body.id,
-      name: body.name,
-      type: body.type,
-      slug: body.slug,
-      image: body.image,
-      rating: body.rating || 5.0,
-      description: body.description,
-      variant_order: body.variantOrder || body.variant_order,
-      variants: body.variants,
-      active: body.active !== undefined ? body.active : true,
-      created_at: new Date().toISOString(),
-    }).select().single()
-    if (error) throw error
-    return NextResponse.json(mapProduct(data), { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
-  }
+  return NextResponse.json({ error: 'Admin only' }, { status: 401 })
 }

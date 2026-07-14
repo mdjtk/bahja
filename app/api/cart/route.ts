@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       .eq('user_id', user.uid)
 
     if (error) throw error
-    return NextResponse.json(data.map((item) => ({
+    return NextResponse.json(data.map((item: any) => ({
       id: item.product_id,
       variant: item.variant,
       qty: item.qty,
