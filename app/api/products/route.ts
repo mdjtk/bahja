@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { isAdmin } from '@/lib/admin-auth'
-
-async function getClient() {
-  const { createClient } = await import('@supabase/supabase-js')
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
-}
 
 function mapProduct(p: any) {
   return {
@@ -28,9 +20,7 @@ function mapProduct(p: any) {
 
 export async function GET() {
   try {
-    if (!process.env.SUPABASE_URL) throw new Error('SUPABASE_URL missing')
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY missing')
-    const sb = await getClient()
+    const sb = await getSupabaseAdmin()
     const { data, error } = await sb.from('bahja_products').select('*').order('created_at', { ascending: true })
     if (error) throw error
     return NextResponse.json(data.map(mapProduct))
@@ -45,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
   try {
     const body = await req.json()
-    const sb = await getClient()
+    const sb = await getSupabaseAdmin()
     const { data, error } = await sb.from('bahja_products').upsert({
       id: body.id,
       name: body.name,
