@@ -151,7 +151,8 @@ export default function AccountPage() {
     if (user?.phone) return
     const local = getPhoneLocal()
     if (local) { setApiPhone(local); return }
-    getSupabaseBrowser().auth.getSession().then(({ data: { session } }) => {
+    getSupabaseBrowser().auth.getSession().then((result: { data: { session: any } }) => {
+      const session = result.data?.session
       if (!session?.access_token) return
       fetch('/api/auth/phone', { headers: { Authorization: `Bearer ${session.access_token}` } })
         .then((r) => r.json())

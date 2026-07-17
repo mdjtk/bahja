@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
-import type { User } from '@supabase/supabase-js'
+import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js'
 import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 interface AuthContextType {
@@ -29,7 +29,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const supabase = getSupabaseBrowser()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       const supaUser = session?.user ?? null
       if (supaUser) {
         console.log('[AuthProvider] User state changed:', supaUser.id, supaUser.email)
