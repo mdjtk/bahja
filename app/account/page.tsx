@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { updateProfile } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
 import { fetchWithAuth } from '@/lib/fetch-with-auth'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { useAuth } from '@/components/AuthProvider'
 import { savePhoneLocal, getPhoneLocal } from '@/lib/store'
 import { toast } from '@/components/Toast'
@@ -69,11 +68,12 @@ export default function AccountPage() {
 
   const syncAddressToServer = async (line: string, city: string, state: string, pincode: string) => {
     try {
-      const token = await auth.currentUser?.getIdToken()
-      if (!token) return
+      const supabase = getSupabaseBrowser()
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
       await fetch('/api/auth/addresses', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ address: line, city, state, pincode }),
       })
     } catch {}
@@ -94,9 +94,10 @@ export default function AccountPage() {
     toast('Address removed')
   }
 
-  const name = user?.displayName || ''
+  const meta = user?.user_metadata || {}
+  const name = meta.full_name || meta.name || ''
   const email = user?.email || ''
-  const displayPhone = user?.phoneNumber || apiPhone || getPhoneLocal()
+  const displayPhone = user?.phone || apiPhone || getPhoneLocal()
   const initial = name ? name[0].toUpperCase() : email ? email[0].toUpperCase() : '?'
 
   const sectionHeading: React.CSSProperties = {
@@ -135,7 +136,8 @@ export default function AccountPage() {
   useEffect(() => {
     if (authLoading) return
     if (!user) { router.push('/auth/login?redirect=/account'); return }
-    setEditName(user.displayName || '')
+    const meta2 = user?.user_metadata || {}
+    setEditName(meta2.full_name || meta2.name || '')
     syncPhone()
     fetchWithAuth('/api/orders/my')
       .then((r) => r.json())
@@ -146,11 +148,12 @@ export default function AccountPage() {
   const syncPhone = () => {
     if (synced) return
     setSynced(true)
-    if (user?.phoneNumber) return
+    if (user?.phone) return
     const local = getPhoneLocal()
     if (local) { setApiPhone(local); return }
-    user?.getIdToken().then((token) => {
-      fetch('/api/auth/phone', { headers: { Authorization: `Bearer ${token}` } })
+    getSupabaseBrowser().auth.getSession().then(({ data: { session } }) => {
+      if (!session?.access_token) return
+      fetch('/api/auth/phone', { headers: { Authorization: `Bearer ${session.access_token}` } })
         .then((r) => r.json())
         .then((d) => { if (d.phone) { setApiPhone(d.phone); savePhoneLocal(d.phone) } })
         .catch(() => {})
@@ -162,7 +165,9 @@ export default function AccountPage() {
     if (!trimmed) return
     setSaving('name')
     try {
-      if (auth.currentUser) await updateProfile(auth.currentUser, { displayName: trimmed })
+      const supabase = getSupabaseBrowser()
+      const { error } = await supabase.auth.updateUser({ data: { full_name: trimmed } })
+      if (error) throw error
       toast('Name updated')
       setEditingName(false)
       setSaving(null)
@@ -174,10 +179,11 @@ export default function AccountPage() {
     if (editPhone.length !== 10) return
     setSaving('phone')
     try {
-      const token = await auth.currentUser?.getIdToken()
+      const supabase = getSupabaseBrowser()
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch('/api/auth/update-phone', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({ phone: editPhone }),
       })
       if (!res.ok) { const e = await res.json(); throw new Error(e.error) }
@@ -388,7 +394,8 @@ export default function AccountPage() {
                         e.preventDefault()
                         if (!confirm('Cancel this order?')) return
                         try {
-                          const token = await auth.currentUser?.getIdToken()
+                          const supabase = getSupabaseBrowser()
+                          const { data: { session } } = await supabase.auth.getSession()
                           const res = await fetch('/api/orders/cancel', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -479,7 +486,7 @@ export default function AccountPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0' }}>
                 <div>
                   <div style={label}>Password</div>
-                  <div style={muted}>Last changed: {user?.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleDateString('en-IN') : 'N/A'}</div>
+                  <div style={muted}>Last changed: {user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString('en-IN') : 'N/A'}</div>
                 </div>
                 <Link href="/auth/reset-password" style={linkBtn}>Reset</Link>
               </div>
@@ -504,7 +511,7 @@ export default function AccountPage() {
                 <div>
                   <div style={label}>Account Created</div>
                   <div style={muted}>
-                    {user?.metadata?.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Unknown'}
+                    {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Unknown'}
                   </div>
                 </div>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(58,36,26,0.15)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

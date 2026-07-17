@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAdminAuth } from '@/lib/firebase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase'
 import { isAdmin } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
@@ -8,26 +8,24 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const allUsers: any[] = []
-    let pageToken: string | undefined
+    const supabase = await getSupabaseAdmin()
+    const { data: { users }, error } = await supabase.auth.admin.listUsers()
 
-    do {
-      const result = await getAdminAuth().listUsers(1000, pageToken)
-      allUsers.push(...result.users.map((u) => ({
-        uid: u.uid,
-        email: u.email,
-        displayName: u.displayName,
-        phoneNumber: u.phoneNumber,
-        photoURL: u.photoURL,
-        createdAt: u.metadata.creationTime,
-        lastSignInAt: u.metadata.lastSignInTime,
-        provider: u.providerData.map((p) => p.providerId),
-        disabled: u.disabled,
-      })))
-      pageToken = result.pageToken
-    } while (pageToken)
+    if (error) throw error
 
-    return NextResponse.json(allUsers)
+    const mapped = (users || []).map((u: any) => ({
+      uid: u.id,
+      email: u.email,
+      displayName: u.user_metadata?.full_name || u.user_metadata?.name || '',
+      phoneNumber: u.phone || '',
+      photoURL: u.user_metadata?.avatar_url || u.user_metadata?.picture || '',
+      createdAt: u.created_at,
+      lastSignInAt: u.last_sign_in_at,
+      provider: u.app_metadata?.providers || [],
+      disabled: u.banned_at ? true : false,
+    }))
+
+    return NextResponse.json(mapped)
   } catch (err: any) {
     console.error('Error in GET /api/admin/users:', err);
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })

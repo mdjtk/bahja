@@ -1,18 +1,18 @@
-import { auth } from './firebase'
+import { getSupabaseBrowser } from './supabase-browser'
 
 export async function fetchWithAuth(input: RequestInfo, init?: RequestInit) {
-  const user = auth.currentUser
+  const supabase = getSupabaseBrowser()
   const headers = new Headers(init?.headers)
 
-  if (user) {
-    try {
-      const token = await user.getIdToken()
-      headers.set('Authorization', `Bearer ${token}`)
-    } catch (err) {
-      console.error('[fetchWithAuth] Failed to get ID token:', err)
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      headers.set('Authorization', `Bearer ${session.access_token}`)
+    } else {
+      console.warn('[fetchWithAuth] No active session for request:', input)
     }
-  } else {
-    console.warn('[fetchWithAuth] No current user for request:', input)
+  } catch (err) {
+    console.error('[fetchWithAuth] Failed to get session:', err)
   }
 
   if (!headers.has('Content-Type')) {

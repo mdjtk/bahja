@@ -9,12 +9,12 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.razorpay.com https://*.firebase.com https://*.firebaseapp.com https://apis.google.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.razorpay.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://*.supabase.co http://*.supabase.co https://*.googleapis.com https://*.gstatic.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co https://*.firebase.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.razorpay.com wss://*.firebase.com",
-      "frame-src 'self' https://*.razorpay.com https://*.firebase.com https://*.firebaseapp.com https://apis.google.com",
+      "connect-src 'self' https://*.supabase.co https://*.razorpay.com",
+      "frame-src 'self' https://*.razorpay.com",
       "manifest-src 'self'",
     ].join('; '),
   },
@@ -23,7 +23,7 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['firebase-admin'],
+  serverExternalPackages: [],
   async headers() {
     return [
       {

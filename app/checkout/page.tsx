@@ -6,16 +6,17 @@ import { useRouter } from 'next/navigation'
 import { loadCart, saveCart, placeOrderDb, CartItem, getPhoneLocal } from '@/lib/store'
 import { useAuth } from '@/components/AuthProvider'
 import { toast } from '@/components/Toast'
-import { auth } from '@/lib/firebase'
 import { fetchWithAuth } from '@/lib/fetch-with-auth'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
-const savePhoneToFirebase = async (phone: string) => {
+const savePhoneToBackend = async (phone: string) => {
   try {
-    const idToken = await auth.currentUser?.getIdToken()
-    if (!idToken) return
+    const supabase = getSupabaseBrowser()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) return
     await fetch('/api/auth/update-phone', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify({ phone }),
     })
   } catch {}
@@ -65,8 +66,9 @@ export default function CheckoutPage() {
     setCart(c)
     setLoaded(true)
 
-    if (user.displayName) setName(user.displayName)
-    if (user.phoneNumber) setPhone(user.phoneNumber.replace(/^\+91/, ''))
+    const meta = user.user_metadata || {}
+    if (meta.full_name || meta.name) setName(meta.full_name || meta.name)
+    if (user.phone) setPhone(user.phone.replace(/^\+91/, ''))
     else { const local = getPhoneLocal(); if (local) setPhone(local.replace(/^\+91/, '')) }
     if (user.email && !email) setEmail(user.email)
 
@@ -150,7 +152,7 @@ export default function CheckoutPage() {
               razorpayPaymentId: response.razorpay_payment_id,
               productsMap: productMap,
             })
-            savePhoneToFirebase(phone)
+            savePhoneToBackend(phone)
             saveCart([])
             window.dispatchEvent(new Event('cart-update'))
             router.push(`/order-confirmed?id=${orderData.id}`)
@@ -201,7 +203,7 @@ export default function CheckoutPage() {
       try {
         const productMap = Object.fromEntries(products.map((p: any) => [p.id, p]));
         const order = await placeOrderDb({ name, phone, email, address, city, state, pincode, payment: 'cod', cart, total, productsMap: productMap })
-        savePhoneToFirebase(phone)
+        savePhoneToBackend(phone)
         saveCart([])
         window.dispatchEvent(new Event('cart-update'))
         router.push(`/order-confirmed?id=${order.id}`)

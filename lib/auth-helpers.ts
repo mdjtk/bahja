@@ -9,9 +9,19 @@ export async function verifyAuth(req: Request) {
   }
   try {
     const token = authHeader.slice(7)
-    const { getAdminAuth } = await import('./firebase-admin')
-    const decoded = await getAdminAuth().verifyIdToken(token)
-    return decoded
+    const { getSupabaseAdmin } = await import('./supabase')
+    const supabase = await getSupabaseAdmin()
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    if (error || !user) {
+      console.error('[verifyAuth] Supabase token verification failed:', error)
+      return null
+    }
+    return {
+      uid: user.id,
+      email: user.email,
+      phone_number: user.phone,
+      ...user.user_metadata,
+    }
   } catch (err) {
     console.error('[verifyAuth] Token verification failed:', err)
     return null

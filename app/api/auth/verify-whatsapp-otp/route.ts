@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase'
-import { getAdminAuth } from '@/lib/firebase-admin'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
@@ -34,24 +33,26 @@ export async function POST(req: NextRequest) {
     // Delete the used OTP
     await (await getSupabaseAdmin()).from('bahja_otps').delete().eq('id', otpRecord.id)
 
-    // Get or create Firebase user by phone
+    // Get or create Supabase user by phone
     const fullPhone = '+91' + cleaned
-    let firebaseUid: string
+    const supabase = await getSupabaseAdmin()
 
-    try {
-      const fbUser = await getAdminAuth().getUserByPhoneNumber(fullPhone)
-      firebaseUid = fbUser.uid
-    } catch {
-      const fbUser = await getAdminAuth().createUser({
-        phoneNumber: fullPhone,
+    // Check if user exists by listing users with phone
+    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers()
+    if (listError) throw listError
+
+    let userId: string | undefined = existingUsers?.users?.find((u: any) => u.phone === fullPhone)?.id
+
+    if (!userId) {
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        phone: fullPhone,
+        phone_confirm: true,
       })
-      firebaseUid = fbUser.uid
+      if (createError) throw createError
+      userId = newUser.user?.id
     }
 
-    // Generate Firebase custom token
-    const customToken = await getAdminAuth().createCustomToken(firebaseUid)
-
-    return NextResponse.json({ token: customToken })
+    return NextResponse.json({ success: true, userId })
   } catch (err: any) {
     console.error('Error in POST /api/auth/verify-whatsapp-otp:', err);
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })

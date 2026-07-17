@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
-import { sendPasswordResetEmail } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 import { toast } from '@/components/Toast'
 
 export default function ResetPasswordPage() {
@@ -14,7 +13,11 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      await sendPasswordResetEmail(auth, email)
+      const supabase = getSupabaseBrowser()
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/account`,
+      })
+      if (error) throw error
       setSent(true)
     } catch (err: any) {
       toast(err.message || 'Failed to send reset email')

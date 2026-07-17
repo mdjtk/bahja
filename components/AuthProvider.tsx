@@ -1,8 +1,8 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
-import { onAuthStateChanged, signOut as firebaseSignOut, reload, User } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
+import type { User } from '@supabase/supabase-js'
+import { getSupabaseBrowser } from '@/lib/supabase-browser'
 
 interface AuthContextType {
   user: User | null
@@ -27,30 +27,31 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        console.log('[AuthProvider] User signed in:', firebaseUser.uid, firebaseUser.email)
+    const supabase = getSupabaseBrowser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const supaUser = session?.user ?? null
+      if (supaUser) {
+        console.log('[AuthProvider] User state changed:', supaUser.id, supaUser.email)
       } else {
         console.log('[AuthProvider] No user (signed out)')
       }
-      setUser(firebaseUser)
-      setLoading(false)
-    }, (error) => {
-      console.error('[AuthProvider] onAuthStateChanged error:', error)
+      setUser(supaUser)
       setLoading(false)
     })
-    return unsubscribe
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const refresh = useCallback(async () => {
-    if (auth.currentUser) {
-      await reload(auth.currentUser)
-      setUser(auth.currentUser)
-    }
+    const supabase = getSupabaseBrowser()
+    const { data: { user: refreshedUser } } = await supabase.auth.getUser()
+    setUser(refreshedUser)
   }, [])
 
   const signOut = useCallback(async () => {
-    await firebaseSignOut(auth)
+    const supabase = getSupabaseBrowser()
+    await supabase.auth.signOut()
     setUser(null)
   }, [])
 
