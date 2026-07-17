@@ -13,7 +13,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https://*.supabase.co http://*.supabase.co https://*.googleapis.com https://*.gstatic.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co https://*.firebase.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://*.razorpay.com wss://*.firebase.com",
+      "connect-src 'self' https://*.supabase.co https://*.firebase.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.razorpay.com wss://*.firebase.com",
       "frame-src 'self' https://*.razorpay.com https://*.firebase.com https://*.firebaseapp.com https://apis.google.com",
       "manifest-src 'self'",
     ].join('; '),
