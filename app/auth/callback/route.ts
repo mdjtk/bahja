@@ -2,9 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
 export async function GET(req: Request) {
-  const { searchParams, origin } = new URL(req.url)
+  const { searchParams } = new URL(req.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/account'
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin
 
   if (code) {
     const supabaseResponse = NextResponse.redirect(`${origin}${next}`)

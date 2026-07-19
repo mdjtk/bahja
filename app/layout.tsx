@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
   description:
     "Bahja brings you pure, raw honey direct from Kerala beehives. Shop Premium Wild Honey & Medicinal Stingless Bee Honey. 100% pure, no additives.",
-  keywords: ["bahja", "honey", "pure honey", "raw honey", "natural honey", "Kerala honey", "Indian honey", "wild honey", "stingless bee honey"],
+  keywords: ["bahja", "raw honey online", "raw honey price", "raw honey for weight loss", "raw honey Benefits", "raw honey in india", "raw honey india", "raw honey price in india","raw honey benefits in hindi", "raw honey calories", "raw honey buy online", "raw honey buy online india", "raw honey cancer", "raw honey for diabetes", "raw honey for weight gain", "raw honey for cough", "raw honey for weight loss in hindi", "raw honey for immunity", "raw honey for skin", "raw honey for hair", "raw honey for periods", "raw honey for pregnancy", "raw honey for joints pain", "raw honey for children", "raw honey for weight gain in hindi", "raw honey for hair", "raw honey for skin", "raw honey for weight loss in hindi", "raw honey for immunity", "raw honey for skin", "raw honey for hair", "raw honey for periods", "raw honey for pregnancy", "raw honey for joints pain", "raw honey for children", "raw honey for weight gain in hindi", "honey", "pure honey", "raw honey", "natural honey", "Kerala honey", "Indian honey", "wild honey", "stingless bee honey"],
   icons: {
     icon: "/favicon.ico",
     apple: "/assets/images/logo.png",
