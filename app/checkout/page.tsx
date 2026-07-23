@@ -130,9 +130,8 @@ export default function CheckoutPage() {
         order_id: order.id,
         handler: async function (response: any) {
           try {
-            const verifyRes = await fetch('/api/verify-payment', {
+            const verifyRes = await fetchWithAuth('/api/verify-payment', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,

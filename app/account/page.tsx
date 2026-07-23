@@ -395,11 +395,8 @@ export default function AccountPage() {
                         e.preventDefault()
                         if (!confirm('Cancel this order?')) return
                         try {
-                          const supabase = getSupabaseBrowser()
-                          const { data: { session } } = await supabase.auth.getSession()
-                          const res = await fetch('/api/orders/cancel', {
+                          const res = await fetchWithAuth('/api/orders/cancel', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ order_id: order.order_id }),
                           })
                           if (!res.ok) { toast('Failed to cancel'); return }
