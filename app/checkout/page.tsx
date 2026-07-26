@@ -86,7 +86,8 @@ export default function CheckoutPage() {
     const price = product?.variants[item.variant]?.price ?? 0
     return sum + price * item.qty
   }, 0)
-  const shipping = subtotal >= 400 ? 0 : 49
+  const onlinePayment = payment === 'razorpay'
+  const shipping = (subtotal >= 400 || onlinePayment) ? 0 : 49
   const total = subtotal + shipping
 
   const handleSelectAddress = (id: string) => {
@@ -103,30 +104,48 @@ export default function CheckoutPage() {
   const handleRazorpayPayment = async () => {
     setProcessing(true)
     try {
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      if (!razorpayKey) {
+        toast('Payment is not configured. Please try again later.')
+        console.error('[Checkout] NEXT_PUBLIC_RAZORPAY_KEY_ID is missing')
+        setProcessing(false)
+        return
+      }
+
       const res = await fetchWithAuth('/api/create-order', {
         method: 'POST',
         body: JSON.stringify({
           items: cart,
           amount: total,
           receipt: 'bhj_' + Date.now(),
+          paymentMethod: 'razorpay',
         }),
       })
-      if (!res.ok) throw new Error('Failed to create order')
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        console.error('[Checkout] create-order failed:', res.status, errBody)
+        if (res.status === 401) {
+          toast('Session expired. Please log in again.')
+          setProcessing(false)
+          return
+        }
+        throw new Error(errBody.error || 'Failed to create order')
+      }
       const order = await res.json()
 
       const scriptLoaded = await loadRazorpayScript()
       if (!scriptLoaded) {
-        toast('Failed to load payment gateway')
+        toast('Failed to load payment gateway. Please check your connection.')
         setProcessing(false)
         return
       }
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: razorpayKey,
         amount: order.amount,
         currency: order.currency,
         name: 'Bahja Pure Honey',
-        description: 'Honey Purchase',
+        description: 'Honey Purchase — Online Payment',
         order_id: order.id,
         handler: async function (response: any) {
           try {
@@ -157,7 +176,7 @@ export default function CheckoutPage() {
             router.push(`/order-confirmed?id=${orderData.id}`)
           } catch (err) {
             console.error('[Checkout] Razorpay placeOrderDb error:', err)
-            toast('Failed to save order. Please contact us.')
+            toast('Payment received but order save failed. We will contact you shortly.')
             setProcessing(false)
           }
         },
@@ -169,12 +188,14 @@ export default function CheckoutPage() {
       }
 
       const rzp = new (window as any).Razorpay(options)
-      rzp.on('payment.failed', function () {
+      rzp.on('payment.failed', function (response: any) {
+        console.error('[Checkout] Razorpay payment failed:', response?.error)
         toast('Payment failed. Please try again.')
         setProcessing(false)
       })
       rzp.open()
-    } catch {
+    } catch (err) {
+      console.error('[Checkout] handleRazorpayPayment error:', err)
       toast('Something went wrong. Please try again.')
       setProcessing(false)
     }
@@ -185,6 +206,9 @@ export default function CheckoutPage() {
     if (cart.length === 0) { errs.cart = 'Your cart is empty!' }
     if (!name.trim() || name.trim().length < 2) errs.name = 'Enter your full name'
     if (!phone || !/^\d{10}$/.test(phone)) errs.phone = 'Enter a valid 10-digit phone number'
+    if (!address.trim()) errs.address = 'Enter your delivery address'
+    if (!city.trim()) errs.city = 'Enter your city'
+    if (!state.trim()) errs.state = 'Enter your state'
     if (!pincode || !/^\d{6}$/.test(pincode)) errs.pincode = 'Enter a valid 6-digit pincode'
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.email = 'Enter a valid email address'
     setErrors(errs)
@@ -316,23 +340,30 @@ export default function CheckoutPage() {
                       )}
                       <textarea rows={2} value={address} onChange={(e) => { setAddress(e.target.value); setSelectedSaved('') }}
                         placeholder="Address line (house, street, area) *"
-                        style={{ ...S.input, resize: 'none', fontFamily: 'inherit' }}
+                        style={{ ...S.input, resize: 'none', fontFamily: 'inherit', borderColor: errors.address ? '#d32f2f' : 'rgba(58,36,26,0.08)' }}
                         onFocus={(e) => e.target.style.borderColor = '#C5700A'}
-                        onBlur={(e) => e.target.style.borderColor = 'rgba(58,36,26,0.08)'}
+                        onBlur={(e) => !errors.address && (e.target.style.borderColor = 'rgba(58,36,26,0.08)')}
                       />
+                      {errors.address && <div style={S.error}>{errors.address}</div>}
                       <div style={S.row}>
-                        <input type="text" value={city} onChange={(e) => { setCity(e.target.value); setSelectedSaved('') }}
-                          placeholder="City *"
-                          style={S.input}
-                          onFocus={(e) => e.target.style.borderColor = '#C5700A'}
-                          onBlur={(e) => e.target.style.borderColor = 'rgba(58,36,26,0.08)'}
-                        />
-                        <input type="text" value={state} onChange={(e) => { setState(e.target.value); setSelectedSaved('') }}
-                          placeholder="State *"
-                          style={S.input}
-                          onFocus={(e) => e.target.style.borderColor = '#C5700A'}
-                          onBlur={(e) => e.target.style.borderColor = 'rgba(58,36,26,0.08)'}
-                        />
+                        <div>
+                          <input type="text" value={city} onChange={(e) => { setCity(e.target.value); setSelectedSaved('') }}
+                            placeholder="City *"
+                            style={{ ...S.input, borderColor: errors.city ? '#d32f2f' : 'rgba(58,36,26,0.08)' }}
+                            onFocus={(e) => e.target.style.borderColor = '#C5700A'}
+                            onBlur={(e) => !errors.city && (e.target.style.borderColor = 'rgba(58,36,26,0.08)')}
+                          />
+                          {errors.city && <div style={S.error}>{errors.city}</div>}
+                        </div>
+                        <div>
+                          <input type="text" value={state} onChange={(e) => { setState(e.target.value); setSelectedSaved('') }}
+                            placeholder="State *"
+                            style={{ ...S.input, borderColor: errors.state ? '#d32f2f' : 'rgba(58,36,26,0.08)' }}
+                            onFocus={(e) => e.target.style.borderColor = '#C5700A'}
+                            onBlur={(e) => !errors.state && (e.target.style.borderColor = 'rgba(58,36,26,0.08)')}
+                          />
+                          {errors.state && <div style={S.error}>{errors.state}</div>}
+                        </div>
                       </div>
                       <input type="text" value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         placeholder="Pincode *"
@@ -366,19 +397,23 @@ export default function CheckoutPage() {
                       </div>
                     </label>
                     <label style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+                      display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px',
                       borderRadius: 12, cursor: 'pointer',
-                      border: payment === 'razorpay' ? '1.5px solid #C5700A' : '1px solid rgba(58,36,26,0.06)',
-                      background: payment === 'razorpay' ? '#fef9e7' : '#fff',
+                      border: payment === 'razorpay' ? '1.5px solid #2e7d32' : '1px solid rgba(58,36,26,0.06)',
+                      background: payment === 'razorpay' ? '#f0faf0' : '#fff',
                       transition: 'all .15s', fontFamily: 'inherit',
                     }}>
                       <input type="radio" name="payment" value="razorpay" checked={payment === 'razorpay'}
                         onChange={(e) => setPayment(e.target.value)}
-                        style={{ accentColor: '#C5700A', margin: 0, width: 16, height: 16 }}
+                        style={{ accentColor: '#2e7d32', margin: 0, width: 16, height: 16, marginTop: 2 }}
                       />
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: '#3A241A' }}>Pay Online</div>
                         <div style={{ fontSize: 11, color: 'rgba(58,36,26,0.3)' }}>UPI • Card • Netbanking</div>
+                        <div style={{ fontSize: 10, color: '#2e7d32', fontWeight: 600, marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                          Free shipping + instant confirmation
+                        </div>
                       </div>
                     </label>
                   </div>
@@ -419,10 +454,16 @@ export default function CheckoutPage() {
                       <span>Shipping</span>
                       <span style={{ color: shipping === 0 ? '#2e7d32' : '#3A241A', fontWeight: shipping === 0 ? 600 : 400 }}>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
                     </div>
-                    {subtotal < 400 && (
+                    {onlinePayment && (
+                      <div style={{ fontSize: 10, color: '#2e7d32', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
+                        Free shipping on online payment
+                      </div>
+                    )}
+                    {!onlinePayment && subtotal < 400 && (
                       <div style={{ fontSize: 10, color: 'rgba(58,36,26,0.3)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 4 }}>
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#C5700A" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                        Add ₹{400 - subtotal} more for free shipping
+                        Add ₹{400 - subtotal} more for free shipping or pay online
                       </div>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 16, color: '#3A241A', paddingTop: 10, borderTop: '1px solid rgba(58,36,26,0.06)' }}>

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const razorpay = new Razorpay({ key_id, key_secret });
-    const { items, receipt } = await req.json();
+    const { items, receipt, paymentMethod } = await req.json();
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
@@ -55,8 +55,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid order total' }, { status: 400 });
     }
 
+    const SHIPPING_THRESHOLD = 400;
+    const SHIPPING_FEE = 49;
+    // Online payments get free shipping
+    const isOnlinePayment = paymentMethod === 'razorpay';
+    const shipping = (computedTotal >= SHIPPING_THRESHOLD || isOnlinePayment) ? 0 : SHIPPING_FEE;
+    const serverTotal = computedTotal + shipping;
+
     const order = await razorpay.orders.create({
-      amount: Math.round(computedTotal * 100),
+      amount: Math.round(serverTotal * 100),
       currency: 'INR',
       receipt: receipt || 'receipt_' + Date.now(),
       notes: {},

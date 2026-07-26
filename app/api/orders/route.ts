@@ -57,7 +57,9 @@ export async function POST(req: NextRequest) {
 
     const SHIPPING_THRESHOLD = 400
     const SHIPPING_FEE = 49
-    const serverShipping = computedTotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
+    // Online payments get free shipping
+    const isOnlinePayment = body.payment_method === 'razorpay'
+    const serverShipping = (computedTotal >= SHIPPING_THRESHOLD || isOnlinePayment) ? 0 : SHIPPING_FEE
     const serverTotal = computedTotal + serverShipping
 
     if (Math.abs(serverTotal - body.total) > 1) {
