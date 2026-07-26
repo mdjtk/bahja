@@ -32,12 +32,17 @@ export async function POST(req: NextRequest) {
 
     // Server-side amount reconstruction
     let computedTotal = 0;
+    const supabase = await getSupabaseAdmin();
     for (const item of items) {
-      const { data: product } = await (await getSupabaseAdmin())
+      const { data: product, error: prodErr } = await supabase
         .from('bahja_products')
         .select('variants')
         .eq('id', item.id)
         .single();
+
+      if (prodErr) {
+        console.error(`[create-order] Supabase query error for product ${item.id}:`, prodErr);
+      }
 
       if (!product) {
         return NextResponse.json({ error: `Product ${item.id} not found` }, { status: 400 });
@@ -62,6 +67,8 @@ export async function POST(req: NextRequest) {
     const shipping = (computedTotal >= SHIPPING_THRESHOLD || isOnlinePayment) ? 0 : SHIPPING_FEE;
     const serverTotal = computedTotal + shipping;
 
+    console.log('[create-order] Creating Razorpay order:', { serverTotal, items: items.length, paymentMethod });
+
     const order = await razorpay.orders.create({
       amount: Math.round(serverTotal * 100),
       currency: 'INR',
@@ -71,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(order);
   } catch (err: any) {
-    console.error('Create order error:', err);
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+    console.error('[create-order] Error:', err?.message || err, err?.statusCode, err);
+    return NextResponse.json({ error: err?.message || 'Something went wrong' }, { status: err?.statusCode || 500 });
   }
 }

@@ -129,7 +129,9 @@ export default function CheckoutPage() {
           setProcessing(false)
           return
         }
-        throw new Error(errBody.error || 'Failed to create order')
+        toast(errBody.error || 'Failed to create order. Please try again.')
+        setProcessing(false)
+        return
       }
       const order = await res.json()
 
