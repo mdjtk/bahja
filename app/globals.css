@@ -807,22 +807,6 @@ nav .container{height:48px}
 .login-terms a:hover{color:#eab704}
 .login-back{display:inline-flex;align-items:center;gap:6px;margin-top:24px;font-size:13px;color:rgba(58,36,26,.35);text-decoration:none;transition:color .2s}
 .login-back:hover{color:#eab704}
-.login-field{margin-bottom:16px}
-.login-field label{display:block;font-size:12px;font-weight:600;color:#3A241A;margin-bottom:6px}
-.login-input-wrap{position:relative}
-.login-input-wrap input{width:100%;padding:12px 44px 12px 14px;border:1.5px solid rgba(58,36,26,.1);border-radius:12px;font-size:14px;font-family:var(--font-inter);background:#faf8f4;outline:none;transition:all .2s;color:#3A241A}
-.login-input-wrap input:focus{border-color:#eab704;background:#fff;box-shadow:0 0 0 3px rgba(234,183,4,.1)}
-.login-input-wrap input::placeholder{color:rgba(58,36,26,.2)}
-.login-input-toggle{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;padding:8px;cursor:pointer;color:rgba(58,36,26,.3);transition:color .2s;display:flex}
-.login-input-toggle:hover{color:#3A241A}
-.login-email-btn{width:100%;padding:14px 0;background:linear-gradient(135deg,#eab704,#c99a00);color:#3A241A;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font-inter);transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
-.login-email-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(234,183,4,.3)}
-.login-email-btn:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
-.login-switch{text-align:center;margin-top:16px;font-size:13px;color:rgba(58,36,26,.45)}
-.login-switch button{background:none;border:none;color:#C5700A;font-weight:700;cursor:pointer;font-family:var(--font-inter);font-size:13px;padding:0}
-.login-switch button:hover{text-decoration:underline}
-.login-note{background:#fdf8ec;border:1px solid rgba(234,183,4,.25);border-radius:12px;padding:12px 14px;font-size:13px;color:#7a5c00;margin-bottom:16px;text-align:center;line-height:1.5}
-.login-form{margin-bottom:20px}
 @media(max-width:480px){
 .login-page{align-items:flex-start;padding:100px 16px 40px}
 .login-card{padding:32px 24px 28px;border-radius:16px;min-height:auto}
