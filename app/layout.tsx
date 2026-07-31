@@ -18,7 +18,7 @@ const playfair = Playfair_Display({
   variable: "--font-playfair",
 });
 
-const baseUrl = "https://bahjahoney.com";
+const baseUrl = "https://vercel.bahjahoney.app";
 
 export const metadata: Metadata = {
   title: {
@@ -87,3 +87,4 @@ export default function RootLayout({
     </html>
   );
 }
+
